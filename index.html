@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One More Game (OMG) - Official Lounge POS</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #141b2d;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --color-snooker: #00ff66;       /* Neon Green */
+      --color-pool: #ffb703;          /* Bright Amber / Yellow */
+      --color-ps5: #ff007f;           /* Hot Pink / Magenta */
+      --color-sim: #ff2a2a;           /* Crimson Red */
+      --accent-blue: #00d2ff;
+      --green: #10b981;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 15px; padding-bottom: 80px; }
+
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2d3748; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+    header h1 { font-size: 22px; color: var(--color-pool); letter-spacing: 1px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .peak-toggle { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 12px; background: #1e293b; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; }
+    .peak-toggle input { width: 15px; height: 15px; cursor: pointer; }
+
+    .dashboard-container { display: flex; flex-direction: column; gap: 22px; }
+    .row-block { background: #0f1626; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; }
+    .row-header { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .row-cards-flex { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+
+    /* High-Contrast Station Cards */
+    .card { background: var(--card-bg); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 310px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .card:hover { transform: translateY(-2px); }
+
+    .card-snooker { border: 2px solid #005a24; box-shadow: inset 0 0 12px rgba(0, 255, 102, 0.05); }
+    .card-snooker.running { border-color: var(--color-snooker); box-shadow: 0 0 16px rgba(0, 255, 102, 0.35); }
+    .card-snooker .card-head h3 { color: var(--color-snooker); }
+    .card-snooker .category-pill { background: rgba(0, 255, 102, 0.15); color: var(--color-snooker); border: 1px solid var(--color-snooker); }
+
+    .card-pool { border: 2px solid #714e00; box-shadow: inset 0 0 12px rgba(255, 183, 3, 0.05); }
+    .card-pool.running { border-color: var(--color-pool); box-shadow: 0 0 16px rgba(255, 183, 3, 0.35); }
+    .card-pool .card-head h3 { color: var(--color-pool); }
+    .card-pool .category-pill { background: rgba(255, 183, 3, 0.15); color: var(--color-pool); border: 1px solid var(--color-pool); }
+
+    .card-ps5 { border: 2px solid #660033; box-shadow: inset 0 0 12px rgba(255, 0, 127, 0.05); }
+    .card-ps5.running { border-color: var(--color-ps5); box-shadow: 0 0 16px rgba(255, 0, 127, 0.35); }
+    .card-ps5 .card-head h3 { color: var(--color-ps5); }
+    .card-ps5 .category-pill { background: rgba(255, 0, 127, 0.15); color: var(--color-ps5); border: 1px solid var(--color-ps5); }
+
+    .card-sim { border: 2px solid #660d0d; box-shadow: inset 0 0 12px rgba(255, 42, 42, 0.05); }
+    .card-sim.running { border-color: var(--color-sim); box-shadow: 0 0 16px rgba(255, 42, 42, 0.4); }
+    .card-sim .card-head h3 { color: var(--color-sim); }
+    .card-sim .category-pill { background: rgba(255, 42, 42, 0.15); color: var(--color-sim); border: 1px solid var(--color-sim); }
+
+    .category-pill { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .card-head h3 { font-size: 16px; font-weight: bold; }
+    .status-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #334155; }
+    .status-badge.active { background: var(--green); color: black; font-weight: bold; }
+    .status-badge.paused { background: var(--color-pool); color: black; font-weight: bold; }
+
+    .cust-tag { font-size: 13px; font-weight: bold; color: #fff; background: #1f293d; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; border: 1px dashed #475569; }
+    .timer-display { font-size: 22px; font-weight: bold; margin: 2px 0; font-family: monospace; color: #ffffff; }
+    
+    .time-tracker-box { background: #0b0f19; padding: 6px 8px; border-radius: 4px; border: 1px solid #23354d; margin: 5px 0; font-size: 11px; }
+    .time-tracker-box .row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+
+    .frame-control-box { background: #131d2e; border: 1px solid #2a3a52; border-radius: 6px; padding: 7px 8px; margin: 6px 0; font-size: 11px; }
+    .frame-control-box .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .player-counter { display: flex; align-items: center; gap: 4px; background: #0b0f19; border: 1px solid #334155; border-radius: 4px; padding: 1px 4px; }
+    .p-btn { background: none; border: none; color: white; padding: 1px 6px; font-size: 13px; cursor: pointer; }
+    .p-btn:hover { color: var(--accent-blue); }
+
+    .meta-info { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; line-height: 1.3; }
+
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    button { background: #1e293b; color: white; border: 1px solid #475569; padding: 7px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    button:hover { background: #334155; }
+    button.primary { background: var(--accent-blue); color: black; border: none; }
+    button.primary:hover { background: #38bdf8; }
+    button.danger { background: #e11d48; color: white; border: none; }
+    button.success { background: var(--green); color: black; border: none; }
+    button.gold { background: var(--color-pool); color: black; border: none; }
+    button.purple { background: var(--purple); color: white; border: none; }
+    button.outline-danger { background: transparent; border: 1px solid #e11d48; color: #fb7185; }
+    button.outline-danger:hover { background: #e11d48; color: white; }
+
+    /* Modals */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 99; overflow-y: auto; padding: 20px 0; }
+    .modal-box { background: #1e293b; color: white; padding: 20px; border-radius: 8px; width: 440px; border: 1px solid #475569; max-width: 95%; max-height: 90vh; overflow-y: auto; }
+    .modal-box h3 { margin-bottom: 12px; font-size: 16px; color: var(--color-pool); }
+    .modal-box label { display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-dim); }
+    .modal-box input, .modal-box select { width: 100%; padding: 8px; margin-bottom: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px; }
+
+    .cctv-time-box { background: #0b1320; border: 1px dashed var(--accent-blue); padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
+    .cctv-time-box .title { font-size: 11px; color: var(--accent-blue); font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+
+    /* Settlement & Items Manager */
+    .bill-items-manager { background: #0b1320; border: 1px solid #2a3a52; border-radius: 6px; padding: 8px; margin-bottom: 10px; max-height: 160px; overflow-y: auto; }
+    .bill-item-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #1e293b; font-size: 12px; }
+    .remove-item-btn { background: none; border: none; color: #ff0055; cursor: pointer; font-size: 14px; font-weight: bold; padding: 0 4px; }
+    .discount-block { background: #0f172a; border: 1px dashed #475569; border-radius: 6px; padding: 10px; margin-bottom: 12px; }
+    .discount-block .flex-row { display: flex; gap: 8px; align-items: center; }
+
+    /* Frame Audit Table */
+    .frame-audit-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
+    .frame-audit-table th { background: #162032; color: var(--color-pool); padding: 4px 6px; text-align: left; }
+    .frame-audit-table td { padding: 4px 6px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    .frame-audit-table input { width: 65px; padding: 2px 4px; background: #070d18; border: 1px solid #334155; color: white; border-radius: 3px; font-size: 11px; }
+
+    /* Analytics & Reports */
+    .analytics-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 10px 0; }
+    .stat-card { background: #0b1320; border: 1px solid #1e293b; border-radius: 6px; padding: 10px; text-align: center; }
+    .stat-card .val { font-size: 16px; font-weight: bold; margin-top: 4px; }
+    .stat-card.total { border-color: var(--color-snooker); }
+    .stat-card.cash { border-color: var(--green); }
+    .stat-card.online { border-color: var(--accent-blue); }
+
+    .cat-breakdown-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px; margin-bottom: 12px; background: #0f172a; padding: 8px; border-radius: 6px; border: 1px dashed #334155; }
+    .cat-item { text-align: center; font-size: 11px; }
+    .cat-item strong { display: block; font-size: 13px; margin-top: 2px; }
+
+    .report-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+    .report-table th { background: #162032; color: var(--color-pool); padding: 6px; text-align: left; }
+    .report-table td { padding: 6px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+
+    /* Print Receipt */
+    .receipt { background: white; color: black; padding: 20px; border-radius: 4px; width: 330px; font-family: monospace; font-size: 12px; }
+    .receipt h2 { text-align: center; font-size: 16px; margin-bottom: 2px; }
+    .receipt .tagline { text-align: center; font-size: 10px; margin-bottom: 8px; }
+    .receipt hr { border: none; border-top: 1px dashed black; margin: 8px 0; }
+    .receipt-line { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .receipt-total { font-size: 14px; font-weight: bold; border-top: 1px dashed black; padding-top: 6px; margin-top: 6px; }
+    .receipt-actions { margin-top: 15px; display: flex; gap: 8px; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #receipt-modal, #receipt-modal * { visibility: visible; }
+      #receipt-modal { position: absolute; left: 0; top: 0; background: none; }
+      .receipt-actions { display: none; }
+    }
+
+    /* Tabs UI */
+    .tabs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 10px; }
+    .tab-card { background: #131b2e; border: 1px solid var(--purple); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+    .tab-card h4 { color: var(--purple); font-size: 14px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .tab-items-box { font-size: 11px; color: var(--text-dim); max-height: 90px; overflow-y: auto; margin: 6px 0; border-top: 1px dashed #334155; padding-top: 4px; }
+
+    /* Cafe */
+    .cafe-layout-grid { display: grid; grid-template-columns: 360px 1fr; gap: 16px; margin-top: 5px; }
+    @media (max-width: 900px) { .cafe-layout-grid { grid-template-columns: 1fr; } }
+    .cafe-container { background: var(--card-bg); border: 1px solid #334155; border-radius: 8px; padding: 14px; }
+    .cafe-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .cafe-tab-btn { flex: 1; min-width: 65px; padding: 6px 4px; font-size: 11px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; color: var(--text-dim); cursor: pointer; text-align: center; }
+    .cafe-tab-btn.active { background: var(--accent-blue); color: black; font-weight: bold; border-color: var(--accent-blue); }
+
+    .menu-subheading { font-size: 11px; font-weight: bold; color: var(--color-pool); margin: 8px 0 4px 0; text-transform: uppercase; border-bottom: 1px dashed #334155; padding-bottom: 2px; }
+    .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 12px; }
+    .item-controls { display: flex; align-items: center; gap: 6px; }
+    .qty-box { display: flex; align-items: center; background: #0b0f19; border: 1px solid #334155; border-radius: 4px; }
+    .qty-btn { background: none; border: none; color: white; padding: 2px 7px; font-size: 13px; cursor: pointer; }
+    .qty-val { width: 20px; text-align: center; font-size: 12px; font-weight: bold; color: var(--color-pool); }
+
+    .direct-cafe-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px; height: fit-content; }
+    .direct-cafe-box h4 { font-size: 14px; color: var(--color-pool); margin-bottom: 8px; }
+    .cart-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 11px; }
+    .cafe-summary { font-size: 11px; color: var(--accent-blue); margin-bottom: 6px; background: #0f172a; padding: 4px 6px; border-radius: 4px; max-height: 50px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>ONE MORE GAME (OMG)</h1>
+      <small style="color: var(--text-dim);">Official Lounge, Simulator & Cafe POS</small>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="gold" onclick="openReportsModal()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-radius: 6px;">
+        <span>📊 Reports & Register</span>
+      </button>
+      <button type="button" class="purple" onclick="toggleTabsDrawer()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; border-radius: 6px;">
+        <span>📌 Customer Tabs</span>
+        <span id="active-tabs-badge" style="background: #3b0764; color: #d8b4fe; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: bold; border: 1px solid #c084fc;">0 Active</span>
+      </button>
+
+      <div class="peak-toggle">
+        <input type="checkbox" id="peak-toggle">
+        <label for="peak-toggle">PEAK</label>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    <!-- ROW 1: Cue Sports (Snooker & Pool) -->
+    <section class="row-block">
+      <div class="row-header">
+        <span style="color: var(--color-snooker);">🟢 Snooker Tables (Neon Green)</span>
+        <span style="color: var(--text-dim);">|</span>
+        <span style="color: var(--color-pool);">🟡 Pool Tables (Vibrant Yellow)</span>
+      </div>
+      <div class="row-cards-flex" id="cue-sports-grid"></div>
+    </section>
+
+    <!-- ROW 2: Gaming Consoles & Simulator -->
+    <section class="row-block">
+      <div class="row-header">
+        <span style="color: var(--color-ps5);">💖 PS5 Consoles (Hot Pink)</span>
+        <span style="color: var(--text-dim);">|</span>
+        <span style="color: var(--color-sim);">🏎️ Racing Simulator (Crimson Red)</span>
+      </div>
+      <div class="row-cards-flex" id="gaming-sim-grid"></div>
+    </section>
+
+    <!-- ROW 3: Cafe & Refreshments -->
+    <section class="row-block">
+      <div class="row-header" style="color: var(--accent-blue);">
+        ☕ OMG Lounge Cafe & Refreshments
+      </div>
+      <div class="cafe-layout-grid">
+        <div class="direct-cafe-box">
+          <h4>🍟 Direct Cafe Order (Walk-in)</h4>
+          <input type="text" id="walkin-cust-name" placeholder="Customer Name (e.g. Rahul)" style="margin-bottom: 6px; font-size: 12px; width: 100%; padding: 8px; background: #070d18; border: 1px solid #334155; color: white; border-radius: 4px;">
+          <div id="walkin-cart-items" style="font-size: 11px; color: var(--color-pool); margin-bottom: 8px; max-height: 120px; overflow-y: auto;">Cart is empty</div>
+          <button class="success" style="width: 100%;" onclick="openSettleWalkinModal()">Settle Walk-in Bill</button>
+        </div>
+
+        <div class="cafe-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <h3 style="color: var(--accent-blue); font-size: 13px;">Add Item to Table / Walk-in:</h3>
+            <select id="active-station-select" style="max-width: 320px; padding: 6px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 12px;">
+              <option value="walkin">-- Direct Cafe (Walk-in Customer) --</option>
+            </select>
+          </div>
+
+          <div class="cafe-tabs">
+            <button class="cafe-tab-btn active" onclick="switchCafeCategory('all', this)">All</button>
+            <button class="cafe-tab-btn" onclick="switchCafeCategory('sandwiches', this)">Sandwiches</button>
+            <button class="cafe-tab-btn" onclick="switchCafeCategory('fries', this)">Fries</button>
+            <button class="cafe-tab-btn" onclick="switchCafeCategory('beverages', this)">Beverages</button>
+          </div>
+
+          <div id="cafe-menu-display" style="max-height: 360px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- REPORTS & ANALYTICS MODAL -->
+  <div class="modal-backdrop" id="reports-modal">
+    <div class="modal-box" style="width: 720px; max-width: 95%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="color:var(--color-pool); margin-bottom:0;">📊 OMG Lounge Reports & Analytics</h3>
+        <button class="outline-danger" style="padding:2px 8px; font-size:12px;" onclick="closeModal('reports-modal')">✕</button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:#0b1320; padding:8px; border-radius:6px; border:1px solid #1e293b; margin-bottom:10px;">
+        <div style="display:flex; gap:4px;">
+          <button type="button" id="rep-mode-day-btn" class="primary" style="padding:5px 9px; font-size:11px;" onclick="switchReportViewMode('day')">📅 Day View</button>
+          <button type="button" id="rep-mode-month-btn" style="padding:5px 9px; font-size:11px;" onclick="switchReportViewMode('month')">🗓️ Month View</button>
+        </div>
+
+        <input type="date" id="report-date-picker" onchange="renderReportsDashboard()" style="padding:4px 8px; font-size:12px; margin-bottom:0; width:auto; background:#070d18; border-color:var(--accent-blue);">
+        <input type="month" id="report-month-picker" onchange="renderReportsDashboard()" style="display:none; padding:4px 8px; font-size:12px; margin-bottom:0; width:auto; background:#070d18; border-color:var(--accent-blue);">
+
+       <button type="button" class="purple" style="padding:5px 9px; font-size:11px; margin-left:auto;" onclick="document.getElementById('pos-direct-file-input').click()">📥 Import Day File</button>
+       <input type="file" id="pos-direct-file-input" accept=".json,.txt" style="display:none;" onchange="handleDirectFileImport(event)">
+        <button type="button" class="success" style="padding:5px 9px; font-size:11px;" onclick="openBackdateEntryModal()">➕ Add Past / Backdated Bill</button>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="analytics-stats-grid">
+        <div class="stat-card total">
+          <small style="color:var(--text-dim); font-size:11px;">Total Revenue</small>
+          <div class="val" id="rep-total-rev" style="color:var(--color-snooker);">₹0</div>
+        </div>
+        <div class="stat-card cash">
+          <small style="color:var(--text-dim); font-size:11px;">💵 Cash in Drawer</small>
+          <div class="val" id="rep-cash-rev" style="color:var(--green);">₹0</div>
+        </div>
+        <div class="stat-card online">
+          <small style="color:var(--text-dim); font-size:11px;">📱 UPI / Online</small>
+          <div class="val" id="rep-online-rev" style="color:var(--accent-blue);">₹0</div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="cat-breakdown-row">
+        <div class="cat-item"><span style="color:var(--color-snooker);">🟢 Snooker</span><strong id="rep-cat-snooker">₹0</strong></div>
+        <div class="cat-item"><span style="color:var(--color-pool);">🟡 Pool</span><strong id="rep-cat-pool">₹0</strong></div>
+        <div class="cat-item"><span style="color:var(--color-ps5);">💖 PS5</span><strong id="rep-cat-ps5">₹0</strong></div>
+        <div class="cat-item"><span style="color:var(--color-sim);">🏎️ Sim</span><strong id="rep-cat-sim">₹0</strong></div>
+        <div class="cat-item"><span style="color:var(--accent-blue);">☕ Cafe</span><strong id="rep-cat-cafe">₹0</strong></div>
+      </div>
+
+      <!-- Transaction Log -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <strong style="font-size:12px; color:var(--text-dim);" id="rep-log-heading">Transaction Records:</strong>
+        <button class="gold" style="padding:4px 9px; font-size:11px;" onclick="downloadCurrentReportCSV()">📥 Download CSV / Excel</button>
+      </div>
+
+      <div style="max-height: 220px; overflow-y: auto; border: 1px solid #1e293b; border-radius: 6px;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Time/Date</th>
+              <th>Customer</th>
+              <th>Item / Activity</th>
+              <th>Pay Mode</th>
+              <th style="text-align:right;">Amount</th>
+              <th style="text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="rep-transactions-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Master Reset Block -->
+      <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed #334155; display:flex; justify-content:space-between; align-items:center;">
+        <button class="outline-danger" style="font-size:11px; padding:5px 9px;" onclick="triggerMasterResetPrompt()">⚠️ Master Reset All Data</button>
+        <button class="danger" style="padding:6px 14px; font-size:11px;" onclick="closeModal('reports-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+<!-- EDIT TRANSACTION MODAL -->
+  <div class="modal-backdrop" id="edit-txn-modal">
+    <div class="modal-box" style="width: 440px;">
+      <h3 style="color:var(--accent-blue);">✏️ Edit Entry</h3>
+      <input type="hidden" id="edit-txn-id">
+
+      <label>Customer Name:</label>
+      <input type="text" id="edit-txn-cust">
+
+      <label>Details / Description:</label>
+      <textarea id="edit-txn-label" rows="3" style="width:100%; padding:8px; margin-bottom:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:4px; font-size:12px; font-family:inherit; resize:vertical;"></textarea>
+
+      <label>Final Net Amount (₹):</label>
+      <input type="number" id="edit-txn-net">
+
+      <div style="background:#0f172a; padding:8px; border-radius:6px; border:1px dashed #334155; margin-bottom:10px;">
+        <label style="font-size:11px; color:var(--color-pool); font-weight:bold; margin-bottom:4px;">Category Breakdown (Amounts):</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <div><span style="font-size:10px;">Snooker:</span><input type="number" id="edit-txn-snooker" style="margin-bottom:4px; padding:4px;"></div>
+          <div><span style="font-size:10px;">Pool:</span><input type="number" id="edit-txn-pool" style="margin-bottom:4px; padding:4px;"></div>
+          <div><span style="font-size:10px;">PS5:</span><input type="number" id="edit-txn-ps5" style="margin-bottom:4px; padding:4px;"></div>
+          <div><span style="font-size:10px;">Sim (Wheel):</span><input type="number" id="edit-txn-sim" style="margin-bottom:4px; padding:4px;"></div>
+        </div>
+        <div><span style="font-size:10px;">Cafe:</span><input type="number" id="edit-txn-cafe" style="margin-bottom:0; padding:4px;"></div>
+      </div>
+
+      <label>Payment Mode:</label>
+      <select id="edit-txn-paymode">
+        <option value="Cash">Cash</option>
+        <option value="Online">Online</option>
+      </select>
+
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="success" style="flex:1;" onclick="saveEditedTxn()">✓ Update Entry</button>
+        <button class="danger" style="flex:1;" onclick="closeModal('edit-txn-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- UPLOAD DIARY PAGES MODAL -->
+  <div class="modal-backdrop" id="upload-pages-modal">
+    <div class="modal-box" style="width: 480px; max-width:95%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="color:var(--color-pool); margin-bottom:0;">📸 Fast Diary Photo Scanner</h3>
+        <button class="outline-danger" style="padding:2px 8px; font-size:12px;" onclick="closeModal('upload-pages-modal')">✕</button>
+      </div>
+      
+      <label>Entry Date (DD-MM-YYYY):</label>
+      <div style="display:flex; gap:6px; margin-bottom:10px;">
+        <input type="text" id="diary-entry-date" placeholder="DD-MM-YYYY" style="background:#070d18; border-color:var(--accent-blue); margin-bottom:0; flex:1;" readonly>
+        <input type="date" id="diary-native-date-helper" onchange="syncFormattedDate(this.value)" style="width:42px; padding:4px; background:#1e293b; border-color:var(--accent-blue); cursor:pointer; margin-bottom:0;">
+      </div>
+
+      <label>Diary Page Photos (Select 1 or Multiple):</label>
+      <input type="file" id="diary-photos-input" accept="image/*" multiple style="background:#070d18; border-color:var(--accent-blue); padding:6px; width:100%; border-radius:6px; margin-bottom:10px;">
+
+      <div style="background:#0b1320; padding:8px; border-radius:6px; border:1px dashed #334155; margin-bottom:10px;">
+        <label style="font-size:11px; color:var(--text-dim); margin-bottom:2px;">Gemini API Key (Auto-Saved):</label>
+        <input type="password" id="gemini-api-key-input" placeholder="Paste AI Key..." style="margin-bottom:0; font-size:11px;">
+      </div>
+
+      <div id="ai-loading-status" style="display:none; color:var(--color-pool); font-size:12px; margin-bottom:10px; text-align:center; font-weight:bold; background:rgba(255, 183, 3, 0.1); padding:8px; border-radius:4px; border:1px solid var(--color-pool);">
+        ⚡ Fast scanning diary pages...
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="primary" style="flex:1; padding:9px;" id="start-ocr-btn" onclick="processDiaryPagesWithAI()">⚡ Scan & Extract Entries</button>
+        <button class="danger" onclick="closeModal('upload-pages-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI REVIEW & VERIFICATION MODAL -->
+  <div class="modal-backdrop" id="ai-review-modal">
+    <div class="modal-box" style="width: 720px; max-width:95%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3 style="color:var(--color-pool); margin-bottom:0;">🔍 Verify Diary Entries</h3>
+        <button class="outline-danger" style="padding:2px 8px; font-size:12px;" onclick="closeModal('ai-review-modal')">✕</button>
+      </div>
+
+      <p style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">
+        AI ne handwriting decode kar li hai. Check karke seedha approve karein:
+      </p>
+
+      <div style="max-height:320px; overflow-y:auto; border:1px solid #1e293b; border-radius:6px; margin-bottom:10px;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Customer</th>
+              <th>Station / Item</th>
+              <th>Amount (₹)</th>
+              <th>Mode</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="ai-review-tbody"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="success" style="flex:1; padding:9px;" onclick="saveReviewedAIEntriesToRegister()">✓ Approve & Save All to Register</button>
+        <button class="danger" onclick="closeModal('ai-review-modal')">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD BACKDATED / PAST BILL MODAL -->
+  <div class="modal-backdrop" id="backdate-modal">
+    <div class="modal-box" style="width: 400px;">
+      <h3 style="color:var(--green);">📅 Add Past / Specific Date Bill</h3>
+      
+      <label>Date (Day, Month, Year):</label>
+      <input type="date" id="bk-date-input" style="background:#070d18; border-color:var(--accent-blue);">
+
+      <label>Time of Game / Order:</label>
+      <input type="time" id="bk-time-input" style="background:#070d18; border-color:var(--accent-blue);">
+
+      <label>Customer Name:</label>
+      <input type="text" id="bk-cust-input" placeholder="e.g. Vicky">
+
+      <label>Category:</label>
+      <select id="bk-cat-input">
+        <option value="snooker">Snooker</option>
+        <option value="pool">Pool</option>
+        <option value="ps5">PS5 Console</option>
+        <option value="sim">Simulator</option>
+        <option value="cafe">Cafe / Refreshment</option>
+      </select>
+
+      <label>Description (Item details / Frames):</label>
+      <input type="text" id="bk-desc-input" placeholder="e.g. 2 Frames + Cold Coffee">
+
+      <label>Final Net Amount (₹):</label>
+      <input type="number" id="bk-amount-input" placeholder="e.g. 350">
+
+      <label>Payment Mode:</label>
+      <select id="bk-paymode-input">
+        <option value="Online">Online (UPI / QR / Bank)</option>
+        <option value="Cash">Cash (Drawer)</option>
+      </select>
+
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="success" style="flex:1;" onclick="saveBackdateEntry()">Save Entry</button>
+        <button class="danger" style="flex:1;" onclick="closeModal('backdate-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER TABS POPUP MODAL -->
+  <div class="modal-backdrop" id="tabs-modal">
+    <div class="modal-box" style="width: 520px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="color: var(--purple); margin-bottom:0;">📌 Running Customer Tabs (Group Bills)</h3>
+        <button class="outline-danger" style="padding:2px 8px; font-size:12px;" onclick="closeModal('tabs-modal')">✕</button>
+      </div>
+      <div class="tabs-grid" id="customer-tabs-grid" style="max-height: 60vh; overflow-y: auto; padding-right: 4px;"></div>
+      <div style="margin-top: 12px;">
+        <button class="danger" style="width: 100%;" onclick="closeModal('tabs-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- START STATION SESSION MODAL -->
+  <div class="modal-backdrop" id="session-modal">
+    <div class="modal-box">
+      <h3 id="modal-station-title">Start Station</h3>
+      <label>Customer Name:</label>
+      <input type="text" id="cust-name-input" placeholder="Enter customer name..." autofocus>
+
+      <div class="cctv-time-box">
+        <div class="title">📹 CCTV Start Time:</div>
+        <input type="time" id="start-time-input" style="margin-bottom: 6px; background: #070d18; border-color: var(--accent-blue); font-weight: bold; color: var(--color-pool);">
+        
+        <div style="display:flex; align-items:center; gap:6px; margin: 6px 0 4px 0;">
+          <input type="checkbox" id="direct-complete-toggle" onchange="toggleDirectCompleteFields()" style="width:14px; height:14px; margin-bottom:0; cursor:pointer;">
+          <label for="direct-complete-toggle" style="margin-bottom:0; font-size:11px; color:var(--color-pool); cursor:pointer; font-weight:bold;">Completed Game (Direct Bill Entry)</label>
+        </div>
+
+        <div id="direct-end-time-wrapper" style="display:none; margin-top:6px;">
+          <div class="title" style="color:var(--green);">🏁 CCTV End Time:</div>
+          <input type="time" id="direct-end-time-input" style="margin-bottom: 0; background: #070d18; border-color: var(--green); font-weight: bold; color: var(--green);">
+        </div>
+      </div>
+
+      <div id="dynamic-plan-fields"></div>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button class="primary" style="flex: 1;" id="session-action-confirm-btn" onclick="confirmStartSession()">Confirm Start</button>
+        <button class="danger" style="flex: 1;" onclick="closeModal('session-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT LIVE CAFE ORDERS MODAL -->
+  <div class="modal-backdrop" id="edit-session-modal">
+    <div class="modal-box">
+      <h3 id="edit-modal-title">✏️ Manage Table Orders</h3>
+      <div id="edit-cafe-items-list" style="max-height: 220px; overflow-y: auto; margin: 10px 0;"></div>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button class="primary" style="flex: 1;" onclick="closeModal('edit-session-modal')">Done / Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- BILL SETTLEMENT & PAYMENT MODAL -->
+  <div class="modal-backdrop" id="payment-modal">
+    <div class="modal-box" style="width: 480px;">
+      <h3>Bill Settlement & Payment</h3>
+
+      <div class="cctv-time-box" id="pay-time-adjust-box">
+        <div class="title">🏁 Session End Time (CCTV/Actual):</div>
+        <input type="time" id="pay-end-time-input" onchange="recalculateSettlementOnEndTimeChange()" style="margin-bottom: 0; background: #070d18; border-color: var(--accent-blue); font-weight: bold; color: var(--color-pool);">
+      </div>
+
+      <!-- Frame Audit Box -->
+      <div id="settle-frame-audit-wrapper" style="display:none; background:#0b1320; border:1px solid #2a3a52; border-radius:6px; padding:8px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong style="color:var(--color-pool); font-size:11px;">🎱 FRAMES TIME & PLAYERS AUDIT:</strong>
+          <small style="color:var(--text-dim); font-size:10px;">Edit start/end if missed</small>
+        </div>
+        <table class="frame-audit-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Players</th>
+              <th style="text-align:right;">Charge</th>
+            </tr>
+          </thead>
+          <tbody id="settle-frame-audit-tbody"></tbody>
+        </table>
+      </div>
+
+      <label style="font-weight: bold; color: var(--color-pool);">Included Items in Bill (Tap ✕ to Waive/Remove):</label>
+      <div class="bill-items-manager" id="pay-bill-items-list"></div>
+      
+      <div style="background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+          <span>Original Total:</span>
+          <strong id="pay-orig-amount" style="color: white;">₹0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;">
+          <span style="color: var(--color-pool);">Payable Total:</span>
+          <span id="pay-final-amount" style="color: var(--color-pool); font-size: 16px;">₹0</span>
+        </div>
+      </div>
+
+      <div class="discount-block">
+        <label>Discount (% Percentage):</label>
+        <div class="flex-row">
+          <input type="number" id="pay-discount-percent-input" min="0" max="100" value="0" placeholder="e.g. 10" style="margin-bottom: 0;" oninput="applyPaymentAdjustments()">
+          <button type="button" class="gold" style="white-space: nowrap; padding: 8px 10px;" onclick="applyAutoRoundOff()">Auto Round Off</button>
+        </div>
+        <div id="discount-rupees-hint" style="font-size: 11px; color: var(--accent-blue); margin-top: 5px;">Discount Amount: ₹0</div>
+      </div>
+
+      <label>Payment Mode:</label>
+      <select id="pay-mode-select">
+        <option value="Online">Online (UPI / QR Code / Card)</option>
+        <option value="Cash">Cash (Offline)</option>
+      </select>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+        <button class="success" style="padding: 10px;" onclick="confirmPaymentAndSettle()">Complete Payment & Print Slip</button>
+        <button class="purple" id="hold-tab-btn" style="padding: 9px;" onclick="holdSessionToCustomerTab()">📌 Add to Customer Tab (Hold Bill & Free Station)</button>
+        <button class="danger" onclick="closeModal('payment-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINT RECEIPT MODAL -->
+  <div class="modal-backdrop" id="receipt-modal">
+    <div class="receipt">
+      <h2>ONE MORE GAME</h2>
+      <div class="tagline">Play Longer • Pay Less • Eat • Repeat</div>
+      <hr>
+      <div class="receipt-line"><span>Date:</span><span id="rec-date">00-00-0000</span></div>
+      <div class="receipt-line"><span>Customer:</span><strong id="rec-customer">Walk-in</strong></div>
+      <div class="receipt-line"><span>Station:</span><span id="rec-station">Direct Cafe</span></div>
+      <div class="receipt-line"><span>Payment:</span><strong id="rec-paymode">Online</strong></div>
+      <div class="receipt-line" id="rec-start-row"><span>Start Time:</span><span id="rec-starttime">00:00</span></div>
+      <div class="receipt-line" id="rec-end-row"><span>End Time:</span><span id="rec-endtime">00:00</span></div>
+      <div class="receipt-line" id="rec-time-row"><span>Duration:</span><span id="rec-time">00m</span></div>
+      
+      <div id="rec-frames-wrapper" style="display:none; margin: 6px 0;">
+        <hr>
+        <div style="font-weight:bold; font-size:10px; margin-bottom:4px; text-transform:uppercase; color:#1e293b;">Frames Audit:</div>
+        <div id="rec-frames-list"></div>
+      </div>
+
+      <hr>
+      <div id="rec-breakdown"></div>
+      <div class="receipt-line receipt-total">
+        <span>GRAND TOTAL:</span>
+        <span id="rec-total">₹0</span>
+      </div>
+      <div class="receipt-actions">
+        <button class="primary" style="flex: 1;" onclick="window.print()">Print Slip</button>
+        <button class="danger" style="flex: 1;" onclick="closeModal('receipt-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STATIONS = [
+      { id: 'snooker-1', name: 'Snooker Table 1', type: 'snooker', running: false, session: null },
+      { id: 'snooker-2', name: 'Snooker Table 2', type: 'snooker', running: false, session: null },
+      { id: 'pool-1', name: 'Pool Table 1', type: 'pool', running: false, session: null },
+      { id: 'pool-2', name: 'Pool Table 2', type: 'pool', running: false, session: null },
+      { id: 'ps5-1', name: 'PS5 Console 1', type: 'ps5', running: false, session: null },
+      { id: 'ps5-2', name: 'PS5 Console 2', type: 'ps5', running: false, session: null },
+      { id: 'ps5-3', name: 'PS5 Console 3', type: 'ps5', running: false, session: null },
+      { id: 'sim-1', name: 'Racing Simulator (G29)', type: 'sim', running: false, session: null }
+    ];
+
+    const RATES = {
+      sim: { '30m_1p': { duration: 30, price: 120, label: '30 Mins (1 Player)' }, '30m_2p': { duration: 30, price: 140, label: '30 Mins (2 Players)' } },
+      ps5: { '30m': { 1: 80, 2: 140, 3: 210, 4: 280, duration: 30 }, '60m': { 1: 120, 2: 200, 3: 300, 4: 400, duration: 60 } },
+      snooker: { singleFramePrice: 120, frameDurationMins: 30, extraTimePerMin: 4, extraPlayerPerFrame: 40 },
+      pool: { singleFramePrice: 50, frameDurationMins: 10, extraTimePerMin: 3, extraPlayerPerFrame: 20, hourly: { 2: 200, 3: 270, 4: 320, duration: 60 }, thirtyMin: { 2: 140, 3: 180, 4: 200, duration: 30 } }
+    };
+
+    let currentTargetStationId = null;
+
+    window.onload = function() {
+      renderStations();
+      setInterval(updateTimers, 1000);
+      renderCafeMenu();
+      updateActiveDropdown();
+      renderCustomerTabs();
+    };
+
+    function renderStations() {
+      const cueGrid = document.getElementById('cue-sports-grid');
+      const gamingGrid = document.getElementById('gaming-sim-grid');
+      if (!cueGrid || !gamingGrid) return;
+
+      cueGrid.innerHTML = '';
+      gamingGrid.innerHTML = '';
+
+      STATIONS.forEach(st => {
+        const card = document.createElement('div');
+        card.className = `card card-${st.type} ${st.running ? 'running' : ''}`;
+        card.id = `card-${st.id}`;
+
+        let typeTag = `<span class="category-pill">${st.type.toUpperCase()}</span>`;
+        let statusBadgeText = 'AVAILABLE';
+        let statusBadgeClass = '';
+
+        if (st.running && st.session) {
+          if (st.session.isFramePlay && !st.session.frameInProgress) {
+            statusBadgeText = 'WAITING';
+            statusBadgeClass = 'paused';
+          } else {
+            statusBadgeText = 'OCCUPIED';
+            statusBadgeClass = 'active';
+          }
+        }
+
+        let timeBoxHtml = '';
+        let frameControlHtml = '';
+        let cafeHtml = '';
+
+        if (st.running && st.session) {
+          const sess = st.session;
+
+          // Bada session box sirf PS5 aur SIM ke liye dikhega, frame play me nahi
+          if (!sess.isFramePlay) {
+            timeBoxHtml = `
+              <div class="time-tracker-box">
+                <div class="row">
+                  <span style="color:var(--text-dim);">Live Start:</span>
+                  <strong style="color:var(--accent-blue);">${sess.startTimeFormatted || 'Now'}</strong>
+                </div>
+                <div class="row">
+                  <span style="color:var(--text-dim);">Total Session:</span>
+                  <strong id="dur-${st.id}">0 mins</strong>
+                </div>
+              </div>
+            `;
+          }
+
+          if (sess.isFramePlay) {
+            const currentFrameNum = (sess.completedFrames ? sess.completedFrames.length : 0) + 1;
+            if (sess.frameInProgress) {
+              frameControlHtml = `
+                <div class="frame-control-box">
+                  <div class="top">
+                    <strong style="color:var(--color-pool);">Frame #${currentFrameNum} (Running)</strong>
+                    <span id="frame-time-${st.id}" style="font-family:monospace; color:var(--accent-blue); font-size:14px; font-weight:bold;">00:00:00</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <span style="color:var(--text-dim);">Players in Frame:</span>
+                    <div class="player-counter">
+                      <button class="p-btn" onclick="adjustLiveFramePlayers('${st.id}', -1)">-</button>
+                      <strong id="live-players-val-${st.id}" style="color:var(--color-pool); font-size:12px;">${sess.currentFramePlayers || 2}</strong>
+                      <button class="p-btn" onclick="adjustLiveFramePlayers('${st.id}', 1)">+</button>
+                    </div>
+                  </div>
+                  <button class="danger" style="width:100%; padding:6px; font-size:11px;" onclick="finishCurrentFrameOnly('${st.id}')">
+                    ✓ Finish Frame #${currentFrameNum}
+                  </button>
+                </div>
+              `;
+            } else {
+              const nextFrameNum = sess.completedFrames.length + 1;
+              const nextPCount = sess.nextFramePlayers || sess.currentFramePlayers || 2;
+              frameControlHtml = `
+                <div class="frame-control-box" style="background:#1b2537; border-color:var(--color-pool);">
+                  <div style="text-align:center; margin-bottom:6px;">
+                    <span style="color:var(--color-pool); font-weight:bold;">Frame #${sess.completedFrames.length} Finished!</span>
+                  </div>
+                  <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="primary" style="flex:1; padding:6px 4px; font-size:11px;" onclick="startNextFrameManual('${st.id}')">
+                      ▶ Start Frame #${nextFrameNum}
+                    </button>
+                    <div class="player-counter" style="background:#0b0f19; padding:3px 6px;">
+                      <button class="p-btn" onclick="adjustNextFramePlayers('${st.id}', -1)">-</button>
+                      <strong id="next-players-val-${st.id}" style="color:var(--color-pool); font-size:12px; min-width:18px; text-align:center;">${nextPCount}P</strong>
+                      <button class="p-btn" onclick="adjustNextFramePlayers('${st.id}', 1)">+</button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+          }
+
+          if (sess.cafeOrders && sess.cafeOrders.length > 0) {
+            const itemsRows = sess.cafeOrders.map((c, i) => 
+              `<div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                 <span>${i + 1}) ${c.name} (x${c.qty})</span>
+                 <strong style="color:var(--color-pool);">₹${c.unitPrice * c.qty}</strong>
+               </div>`
+            ).join('');
+
+            cafeHtml = `
+              <div class="cafe-summary" style="max-height:85px; line-height:1.4;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #334155; padding-bottom:3px; margin-bottom:4px;">
+                  <span style="font-weight:bold; color:var(--accent-blue); font-size:10px;">☕ CAFE ORDERS:</span>
+                  <button onclick="openEditSessionModal('${st.id}')" style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; padding:1px 5px; font-size:10px; border-radius:3px; cursor:pointer;">✏️ Edit</button>
+                </div>
+                ${itemsRows}
+              </div>
+            `;
+          }
+        }
+
+        // Snooker / Pool card par bada timer nahi dikhega
+        const isFrameStation = (st.type === 'snooker' || st.type === 'pool');
+
+        card.innerHTML = `
+          <div>
+            <div class="card-head">
+              <h3>${st.name}</h3>
+              <div style="display:flex; align-items:center; gap:6px;">
+                ${typeTag}
+                <span class="status-badge ${statusBadgeClass}">${statusBadgeText}</span>
+              </div>
+            </div>
+            ${st.running && st.session ? `<div class="cust-tag">👤 ${st.session.custName}</div>` : ''}
+            ${!isFrameStation ? `<div class="timer-display" id="time-${st.id}">${st.running && st.session ? formatElapsed(st.session.startTime) : '00:00:00'}</div>` : ''}
+            <div class="meta-info" id="meta-${st.id}">
+              ${st.running && st.session ? `${st.session.planLabel || 'In Game'}` : 'Ready for player'}
+            </div>
+            ${timeBoxHtml}
+            ${frameControlHtml}
+            ${cafeHtml}
+          </div>
+          <div>
+            ${st.running && st.session ? `
+              <div class="btn-group" style="margin-bottom:6px;">
+                <button class="danger" onclick="openSettleModalForStation('${st.id}')">End / Settle</button>
+              </div>
+              <button class="outline-danger" style="width:100%; padding:5px; font-size:11px;" onclick="voidCurrentSession('${st.id}')">🚫 Void Session</button>
+            ` : `
+              <button class="primary" style="width:100%;" onclick="openSessionModal('${st.id}')">Start Session</button>
+            `}
+          </div>
+        `;
+
+        if (st.type === 'snooker' || st.type === 'pool') {
+          cueGrid.appendChild(card);
+        } else {
+          gamingGrid.appendChild(card);
+        }
+      });
+    }
+
+    function openSessionModal(stationId) {
+      currentTargetStationId = stationId;
+      const st = STATIONS.find(s => s.id === stationId);
+      const isPeak = document.getElementById('peak-toggle').checked;
+      
+      document.getElementById('modal-station-title').innerText = `Start ${st.name}`;
+      document.getElementById('cust-name-input').value = '';
+
+      const now = new Date();
+      document.getElementById('start-time-input').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const fields = document.getElementById('dynamic-plan-fields');
+      fields.innerHTML = '';
+
+      if (st.type === 'snooker') {
+        fields.innerHTML = `
+          <label>Players in Frame:</label>
+          <select id="snooker-initial-players">
+            <option value="2">2 Players</option>
+            <option value="3">3 Players (+₹40)</option>
+            <option value="4">4 Players (+₹80)</option>
+          </select>
+        `;
+      } else if (st.type === 'pool') {
+        fields.innerHTML = `
+          <label>Play Mode:</label>
+          <select id="pool-mode" onchange="togglePoolStartFields()">
+            <option value="frames">Frame Play (₹50/frame)</option>
+            <option value="hourly">Hourly Play (1 Hour)</option>
+            <option value="thirtyMin">30 Minute Play</option>
+          </select>
+          <div id="pool-time-players" style="display:none; margin-top:8px;">
+            <label>Players:</label>
+            <select id="pool-timed-players">
+              <option value="2">2 Players</option>
+              <option value="3">3 Players</option>
+              <option value="4">4 Players</option>
+            </select>
+          </div>
+          <div id="pool-frame-players" style="margin-top:8px;">
+            <label>Players in Frame:</label>
+            <select id="pool-frame-initial-players">
+              <option value="2">2 Players</option>
+              <option value="3">3 Players (+₹20)</option>
+              <option value="4">4 Players (+₹40)</option>
+            </select>
+          </div>
+        `;
+      } else if (st.type === 'sim') {
+        fields.innerHTML = `
+          <label>Select Plan:</label>
+          <select id="sim-plan">
+            <option value="30m_1p">30 Mins - 1 Player (₹120)</option>
+            <option value="30m_2p">30 Mins - 2 Players (₹140)</option>
+          </select>
+        `;
+      } else if (st.type === 'ps5') {
+        fields.innerHTML = `
+          <label>Players:</label>
+          <select id="ps5-players">
+            <option value="1">1 Player</option>
+            <option value="2">2 Players</option>
+            <option value="3">3 Players</option>
+            <option value="4">4 Players</option>
+          </select>
+          <label>Plan:</label>
+          <select id="ps5-plan">
+            ${!isPeak ? '<option value="30m">30 Minutes Entry Pack</option>' : ''}
+            <option value="60m">60 Minutes</option>
+          </select>
+        `;
+      }
+
+      document.getElementById('session-modal').style.display = 'flex';
+    }
+
+    function togglePoolStartFields() {
+      const mode = document.getElementById('pool-mode').value;
+      document.getElementById('pool-time-players').style.display = mode === 'frames' ? 'none' : 'block';
+      document.getElementById('pool-frame-players').style.display = mode === 'frames' ? 'block' : 'none';
+    }
+
+    function confirmStartSession() {
+      const custName = document.getElementById('cust-name-input').value.trim() || 'Guest Player';
+      const st = STATIONS.find(s => s.id === currentTargetStationId);
+
+      const timeVal = document.getElementById('start-time-input').value;
+      let sessionStartTime = Date.now();
+      let startTimeFormatted = '';
+
+      if (timeVal) {
+        const [hours, minutes] = timeVal.split(':').map(Number);
+        const customDate = new Date();
+        customDate.setHours(hours, minutes, 0, 0);
+        if (customDate.getTime() > Date.now()) customDate.setDate(customDate.getDate() - 1);
+        sessionStartTime = customDate.getTime();
+        startTimeFormatted = customDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else {
+        const now = new Date();
+        startTimeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      let sessionData = {
+        custName: custName,
+        startTime: sessionStartTime,
+        startTimeFormatted: startTimeFormatted,
+        cafeOrders: []
+      };
+
+      if (st.type === 'snooker') {
+        const initPlayers = parseInt(document.getElementById('snooker-initial-players').value) || 2;
+        sessionData.isFramePlay = true;
+        sessionData.mode = 'frames';
+        sessionData.frameInProgress = true;
+        sessionData.currentFrameStart = sessionStartTime;
+        sessionData.currentFrameStartTimeFormatted = startTimeFormatted;
+        sessionData.currentFramePlayers = initPlayers;
+        sessionData.nextFramePlayers = initPlayers;
+        sessionData.completedFrames = [];
+        sessionData.planLabel = `Snooker: Frame #1`;
+      } else if (st.type === 'pool') {
+        const mode = document.getElementById('pool-mode').value;
+        if (mode === 'frames') {
+          const initPlayers = parseInt(document.getElementById('pool-frame-initial-players').value) || 2;
+          sessionData.isFramePlay = true;
+          sessionData.mode = 'frames';
+          sessionData.frameInProgress = true;
+          sessionData.currentFrameStart = sessionStartTime;
+          sessionData.currentFrameStartTimeFormatted = startTimeFormatted;
+          sessionData.currentFramePlayers = initPlayers;
+          sessionData.nextFramePlayers = initPlayers;
+          sessionData.completedFrames = [];
+          sessionData.planLabel = `Pool: Frame #1`;
+        } else {
+          sessionData.isFramePlay = false;
+          sessionData.mode = mode;
+          const players = parseInt(document.getElementById('pool-timed-players').value);
+          sessionData.players = players;
+          sessionData.allowedMins = mode === 'hourly' ? 60 : 30;
+          sessionData.planLabel = mode === 'hourly' ? `Pool: 1 Hour (${players}P)` : `Pool: 30 Mins (${players}P)`;
+        }
+      } else if (st.type === 'sim') {
+        const plan = document.getElementById('sim-plan').value;
+        sessionData.mode = plan;
+        sessionData.allowedMins = RATES.sim[plan].duration;
+        sessionData.planLabel = RATES.sim[plan].label;
+        sessionData.isFramePlay = false;
+      } else if (st.type === 'ps5') {
+        const players = parseInt(document.getElementById('ps5-players').value);
+        const plan = document.getElementById('ps5-plan').value;
+        sessionData.players = players;
+        sessionData.plan = plan;
+        sessionData.allowedMins = RATES.ps5[plan].duration;
+        sessionData.planLabel = `PS5: ${plan} (${players}P)`;
+        sessionData.isFramePlay = false;
+      }
+
+      st.running = true;
+      st.session = sessionData;
+      closeModal('session-modal');
+
+      const isDirectComplete = document.getElementById('direct-complete-toggle') && document.getElementById('direct-complete-toggle').checked;
+      if (isDirectComplete) {
+        const endTimeVal = document.getElementById('direct-end-time-input').value;
+        openSettleModalForStation(st.id, endTimeVal);
+      } else {
+        renderStations();
+        if (typeof updateActiveDropdown === 'function') updateActiveDropdown();
+      }
+    }
+
+    function adjustLiveFramePlayers(stationId, delta) {
+      const st = STATIONS.find(s => s.id === stationId);
+      if (st && st.running && st.session && st.session.isFramePlay) {
+        let p = (st.session.currentFramePlayers || 2) + delta;
+        if (p < 2) p = 2;
+        if (p > 6) p = 6;
+        st.session.currentFramePlayers = p;
+        st.session.nextFramePlayers = p;
+        const el = document.getElementById(`live-players-val-${stationId}`);
+        if (el) el.innerText = p;
+      }
+    }
+
+    function adjustNextFramePlayers(stationId, delta) {
+      const st = STATIONS.find(s => s.id === stationId);
+      if (st && st.running && st.session && st.session.isFramePlay) {
+        let p = (st.session.nextFramePlayers || st.session.currentFramePlayers || 2) + delta;
+        if (p < 2) p = 2;
+        if (p > 6) p = 6;
+        st.session.nextFramePlayers = p;
+        const el = document.getElementById(`next-players-val-${stationId}`);
+        if (el) el.innerText = `${p}P`;
+      }
+    }
+
+    function finishCurrentFrameOnly(stationId) {
+      const st = STATIONS.find(s => s.id === stationId);
+      if (!st || !st.running || !st.session || !st.session.isFramePlay || !st.session.frameInProgress) return;
+
+      const sess = st.session;
+      const now = new Date();
+      const frameDurationMins = Math.max(1, Math.ceil((now.getTime() - sess.currentFrameStart) / 60000));
+      const endTimeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      sess.completedFrames.push({
+        frameNumber: sess.completedFrames.length + 1,
+        startTimeFormatted: sess.currentFrameStartTimeFormatted,
+        endTimeFormatted: endTimeFormatted,
+        durationMins: frameDurationMins,
+        players: sess.currentFramePlayers
+      });
+
+      sess.frameInProgress = false;
+      sess.nextFramePlayers = sess.currentFramePlayers;
+      sess.planLabel = `${st.type === 'snooker' ? 'Snooker' : 'Pool'}: ${sess.completedFrames.length} Frames Done (Waiting)`;
+      renderStations();
+    }
+
+    function startNextFrameManual(stationId) {
+      const st = STATIONS.find(s => s.id === stationId);
+      if (!st || !st.running || !st.session || !st.session.isFramePlay || st.session.frameInProgress) return;
+
+      const sess = st.session;
+      const now = new Date();
+      sess.frameInProgress = true;
+      sess.currentFrameStart = now.getTime();
+      sess.currentFrameStartTimeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      sess.currentFramePlayers = sess.nextFramePlayers || 2;
+      sess.planLabel = `${st.type === 'snooker' ? 'Snooker' : 'Pool'}: Frame #${sess.completedFrames.length + 1}`;
+      renderStations();
+    }
+
+    function voidCurrentSession(stationId) {
+      const st = STATIONS.find(s => s.id === stationId);
+      if (!st || !st.running) return;
+      if (confirm(`Kya aap ${st.name} ka session CANCEL karna chahte hain?`)) {
+        st.running = false;
+        st.session = null;
+        renderStations();
+      }
+    }
+
+    function updateTimers() {
+      STATIONS.filter(s => s.running && s.session).forEach(st => {
+        const el = document.getElementById(`time-${st.id}`);
+        if (el) el.innerText = formatElapsed(st.session.startTime);
+
+        const durEl = document.getElementById(`dur-${st.id}`);
+        if (durEl) {
+          const totalMins = Math.max(0, Math.floor((Date.now() - st.session.startTime) / 60000));
+          durEl.innerText = `${totalMins} mins`;
+        }
+
+        if (st.session.isFramePlay && st.session.frameInProgress) {
+          const frameEl = document.getElementById(`frame-time-${st.id}`);
+          if (frameEl) frameEl.innerText = formatElapsed(st.session.currentFrameStart);
+        }
+      });
+    }
+
+    function formatElapsed(start) {
+      if (!start) return '00:00:00';
+      const diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const s = String(diff % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    }
+
+    /* ---------------- PART 2: CAFE ENGINE ---------------- */
+    const CAFE_CATALOG = [
+      { id: 'omg_spec', name: 'Grilled OMG Special', price: 150, category: 'sandwiches', sub: 'Sandwiches' },
+      { id: 'tandoori_paneer', name: 'Grilled Tandoori Paneer', price: 150, category: 'sandwiches', sub: 'Sandwiches' },
+      { id: 'tandoori_cheesy', name: 'Grilled Tandoori Cheesy', price: 150, category: 'sandwiches', sub: 'Sandwiches' },
+      { id: 'nutella_sand', name: 'Grilled Nutella Sandwich', price: 150, category: 'sandwiches', sub: 'Sandwiches' },
+      { id: 'classic_cheese', name: 'Grilled Classic Cheese', price: 150, category: 'sandwiches', sub: 'Sandwiches' },
+      
+      { id: 'salted_fries', name: 'Salted Fries', price: 120, category: 'fries', sub: 'Fries & Add-ons' },
+      { id: 'peri_fries', name: 'Peri Peri Fries', price: 120, category: 'fries', sub: 'Fries & Add-ons' },
+      { id: 'extra_cheese', name: 'Extra Cheese', price: 20, category: 'fries', sub: 'Fries & Add-ons' },
+      { id: 'extra_dip', name: 'Extra Dip', price: 20, category: 'fries', sub: 'Fries & Add-ons' },
+
+      { id: 'tea', name: 'Tea', price: 25, category: 'beverages', sub: 'Coffee & Tea' },
+      { id: 'black_coffee', name: 'Black Coffee', price: 40, category: 'beverages', sub: 'Coffee & Tea' },
+      { id: 'cappuccino', name: 'Cappuccino', price: 100, category: 'beverages', sub: 'Coffee & Tea' },
+      { id: 'cold_reg', name: 'Cold Coffee (Reg)', price: 120, category: 'beverages', sub: 'Coffee & Tea' },
+      { id: 'cold_lrg', name: 'Cold Coffee (Large)', price: 160, category: 'beverages', sub: 'Coffee & Tea' },
+      { id: 'vanifee', name: 'Vanifee Cold Coffee', price: 140, category: 'beverages', sub: 'Coffee & Tea' },
+
+      { id: 'sb_reg', name: 'Strawberry Shake (Reg)', price: 120, category: 'beverages', sub: 'Shakes' },
+      { id: 'sb_lrg', name: 'Strawberry Shake (Large)', price: 160, category: 'beverages', sub: 'Shakes' },
+      { id: 'oreo_reg', name: 'Oreo Shake (Reg)', price: 150, category: 'beverages', sub: 'Shakes' },
+      { id: 'oreo_lrg', name: 'Oreo Shake (Large)', price: 200, category: 'beverages', sub: 'Shakes' },
+      { id: 'nutella_reg', name: 'Nutella Shake (Reg)', price: 170, category: 'beverages', sub: 'Shakes' },
+      { id: 'nutella_lrg', name: 'Nutella Shake (Large)', price: 230, category: 'beverages', sub: 'Shakes' },
+      { id: 'kitkat_reg', name: 'Kitkat Shake (Reg)', price: 150, category: 'beverages', sub: 'Shakes' },
+      { id: 'kitkat_lrg', name: 'Kitkat Shake (Large)', price: 200, category: 'beverages', sub: 'Shakes' },
+      { id: 'dark_reg', name: 'Dark Chocolate Shake (Reg)', price: 160, category: 'beverages', sub: 'Shakes' },
+      { id: 'dark_lrg', name: 'Dark Chocolate Shake (Large)', price: 210, category: 'beverages', sub: 'Shakes' },
+
+      { id: 'water_20', name: 'Packaged Water Bottle (Reg)', price: 20, category: 'beverages', sub: 'Visi Cooler Drinks' },
+      { id: 'water_30', name: 'Premium Water Bottle (1L)', price: 30, category: 'beverages', sub: 'Visi Cooler Drinks' },
+      { id: 'cold_drink_40', name: 'Cold Drink Can / Bottle', price: 40, category: 'beverages', sub: 'Visi Cooler Drinks' },
+      { id: 'cold_drink_50', name: 'Cold Drink Premium Can', price: 50, category: 'beverages', sub: 'Visi Cooler Drinks' },
+      { id: 'energy_60', name: 'Energy Drink (Mini Can)', price: 60, category: 'beverages', sub: 'Visi Cooler Drinks' },
+      { id: 'energy_70', name: 'Energy Drink (Standard)', price: 70, category: 'beverages', sub: 'Visi Cooler Drinks' },
+      { id: 'energy_125', name: 'Premium Energy Drink (Red Bull)', price: 125, category: 'beverages', sub: 'Visi Cooler Drinks' }
+    ];
+
+    let walkinCart = [];
+    let currentCafeCategory = 'all';
+
+    function switchCafeCategory(cat, btn) {
+      currentCafeCategory = cat;
+      document.querySelectorAll('.cafe-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCafeMenu();
+    }
+
+    function renderCafeMenu() {
+      const display = document.getElementById('cafe-menu-display');
+      if (!display) return;
+      display.innerHTML = '';
+
+      let list = currentCafeCategory === 'all' ? CAFE_CATALOG : CAFE_CATALOG.filter(it => it.category === currentCafeCategory);
+      
+      const groups = {};
+      list.forEach(it => {
+        if (!groups[it.sub]) groups[it.sub] = [];
+        groups[it.sub].push(it);
+      });
+
+      for (let sub in groups) {
+        const subHead = document.createElement('div');
+        subHead.className = 'menu-subheading';
+        subHead.innerText = sub;
+        display.appendChild(subHead);
+
+        groups[sub].forEach(item => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'menu-item';
+          itemEl.innerHTML = `
+            <div><strong>${item.name}</strong><br><span style="color: var(--text-dim); font-size: 11px;">₹${item.price}</span></div>
+            <div class="item-controls">
+              <div class="qty-box">
+                <button class="qty-btn" onclick="changeMenuQty('${item.id}', -1)">-</button>
+                <span class="qty-val" id="qty-${item.id}">1</span>
+                <button class="qty-btn" onclick="changeMenuQty('${item.id}', 1)">+</button>
+              </div>
+              <button class="primary" onclick="addCafeItemWithQty('${item.id}', '${item.name}', ${item.price})">+ Add</button>
+            </div>
+          `;
+          display.appendChild(itemEl);
+        });
+      }
+    }
+
+    function changeMenuQty(id, delta) {
+      const el = document.getElementById(`qty-${id}`);
+      let val = parseInt(el.innerText) + delta;
+      if (val < 1) val = 1;
+      el.innerText = val;
+    }
+
+    function addCafeItemWithQty(id, name, unitPrice) {
+      const qty = parseInt(document.getElementById(`qty-${id}`).innerText) || 1;
+      const select = document.getElementById('active-station-select');
+      const target = select.value;
+
+      if (target === 'walkin') {
+        const existing = walkinCart.find(i => i.name === name);
+        if (existing) existing.qty += qty;
+        else walkinCart.push({ name, unitPrice, qty });
+        updateWalkinCartUI();
+      } else {
+        const st = STATIONS.find(s => s.id === target);
+        if (st && st.running && st.session) {
+          if (!st.session.cafeOrders) st.session.cafeOrders = [];
+          const existing = st.session.cafeOrders.find(i => i.name === name);
+          if (existing) existing.qty += qty;
+          else st.session.cafeOrders.push({ name, unitPrice, qty });
+          renderStations();
+          updateActiveDropdown();
+          select.value = target;
+        }
+      }
+      document.getElementById(`qty-${id}`).innerText = 1;
+    }
+
+    function updateWalkinCartUI() {
+      const box = document.getElementById('walkin-cart-items');
+      if (!box) return;
+      if (walkinCart.length === 0) {
+        box.innerText = 'Cart is empty';
+      } else {
+        const total = walkinCart.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+        let html = '';
+        walkinCart.forEach((c, idx) => {
+          html += `
+            <div class="cart-line">
+              <span>${c.name} x${c.qty} (₹${c.unitPrice * c.qty})</span>
+              <span>
+                <button onclick="walkinCart[${idx}].qty++; updateWalkinCartUI();" style="padding:1px 5px; font-size:10px;">+</button>
+                <button onclick="walkinCart[${idx}].qty--; if(walkinCart[${idx}].qty<=0) walkinCart.splice(${idx},1); updateWalkinCartUI();" style="padding:1px 5px; font-size:10px;">-</button>
+                <button onclick="walkinCart.splice(${idx},1); updateWalkinCartUI();" style="padding:1px 5px; font-size:10px; background:var(--color-sim); border:none;">✕</button>
+              </span>
+            </div>
+          `;
+        });
+        html += `<strong style="display:block; margin-top:4px;">Subtotal: ₹${total}</strong>`;
+        box.innerHTML = html;
+      }
+    }
+
+    function updateActiveDropdown() {
+      const select = document.getElementById('active-station-select');
+      if (!select) return;
+      const currentVal = select.value;
+      select.innerHTML = '<option value="walkin">-- Direct Cafe (Walk-in Customer) --</option>';
+      STATIONS.filter(s => s.running && s.session).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.innerText = `${s.name} - [${s.session.custName}]`;
+        select.appendChild(opt);
+      });
+      select.value = currentVal;
+    }
+
+    let editingStationId = null;
+
+    function openEditSessionModal(stationId) {
+      editingStationId = stationId;
+      const st = STATIONS.find(s => s.id === stationId);
+      if (!st || !st.session) return;
+
+      document.getElementById('edit-modal-title').innerText = `✏️ Manage Orders: ${st.name} (${st.session.custName})`;
+      renderEditCafeList();
+      document.getElementById('edit-session-modal').style.display = 'flex';
+    }
+
+    function renderEditCafeList() {
+      const st = STATIONS.find(s => s.id === editingStationId);
+      const listContainer = document.getElementById('edit-cafe-items-list');
+      if (!st || !st.session.cafeOrders || st.session.cafeOrders.length === 0) {
+        listContainer.innerHTML = '<span style="color:var(--text-dim); font-size:12px;">Koi cafe item nahi hai.</span>';
+        return;
+      }
+
+      let html = '';
+      st.session.cafeOrders.forEach((c, idx) => {
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #334155;">
+            <div>
+              <strong>${c.name}</strong><br>
+              <span style="color:var(--color-pool); font-size:11px;">₹${c.unitPrice} each (Total: ₹${c.unitPrice * c.qty})</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button onclick="changeTableCafeQty(${idx}, -1)" style="padding:2px 7px;">-</button>
+              <span style="font-weight:bold; font-size:13px; color:var(--accent-blue); min-width:16px; text-align:center;">${c.qty}</span>
+              <button onclick="changeTableCafeQty(${idx}, 1)" style="padding:2px 7px;">+</button>
+              <button onclick="deleteTableCafeItem(${idx})" style="background:var(--color-sim); border:none; padding:3px 7px; color:white; border-radius:4px; margin-left:4px;" title="Cancel Order">✕ Cancel</button>
+            </div>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+    }
+
+    function changeTableCafeQty(index, delta) {
+      const st = STATIONS.find(s => s.id === editingStationId);
+      if (!st || !st.session.cafeOrders) return;
+      st.session.cafeOrders[index].qty += delta;
+      if (st.session.cafeOrders[index].qty <= 0) {
+        st.session.cafeOrders.splice(index, 1);
+      }
+      renderEditCafeList();
+      renderStations();
+    }
+
+    function deleteTableCafeItem(index) {
+      const st = STATIONS.find(s => s.id === editingStationId);
+      if (!st || !st.session.cafeOrders) return;
+      st.session.cafeOrders.splice(index, 1);
+      renderEditCafeList();
+      renderStations();
+    }
+
+    /* ---------------- PART 3: SETTLEMENT & BILLING ENGINE ---------------- */
+    let pendingSettlementData = null;
+
+    function openSettleModalForStation(stationId, overrideEndTimeStr = null) {
+      const st = STATIONS.find(s => s.id === stationId);
+      if (!st || !st.session) return;
+      const sess = st.session;
+
+      let endTimestamp = Date.now();
+      let endTimeInputVal = '';
+
+      if (overrideEndTimeStr) {
+        const [h, m] = overrideEndTimeStr.split(':').map(Number);
+        const d = new Date(sess.startTime);
+        d.setHours(h, m, 0, 0);
+        if (d.getTime() < sess.startTime) d.setDate(d.getDate() + 1);
+        endTimestamp = d.getTime();
+        endTimeInputVal = overrideEndTimeStr;
+      } else {
+        const now = new Date();
+        endTimeInputVal = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      }
+
+      computeAndPopulateStationSettlement(st, endTimestamp, endTimeInputVal);
+    }
+
+    function toggleDirectCompleteFields() {
+      const isChecked = document.getElementById('direct-complete-toggle').checked;
+      const wrap = document.getElementById('direct-end-time-wrapper');
+      const btn = document.getElementById('session-action-confirm-btn');
+      if (isChecked) {
+        wrap.style.display = 'block';
+        btn.innerText = 'Generate Bill (Direct Entry)';
+        btn.className = 'success';
+        const now = new Date();
+        document.getElementById('direct-end-time-input').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      } else {
+        wrap.style.display = 'none';
+        btn.innerText = 'Confirm Start';
+        btn.className = 'primary';
+      }
+    }
+
+    function parseTimeToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      let [time, modifier] = timeStr.trim().split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (modifier) {
+        if (modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
+        if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+      }
+      return (hours * 60) + (minutes || 0);
+    }
+
+    function calculateSingleFrameCost(stType, startStr, endStr, players) {
+      const isSnooker = stType === 'snooker';
+      const baseFrameRate = isSnooker ? RATES.snooker.singleFramePrice : RATES.pool.singleFramePrice;
+      const allowedMins = isSnooker ? RATES.snooker.frameDurationMins : RATES.pool.frameDurationMins;
+      const extraPerMinRate = isSnooker ? RATES.snooker.extraTimePerMin : RATES.pool.extraTimePerMin;
+      const extraPlayerRate = isSnooker ? RATES.snooker.extraPlayerPerFrame : RATES.pool.extraPlayerPerFrame;
+
+      let startM = parseTimeToMinutes(startStr);
+      let endM = parseTimeToMinutes(endStr);
+      let durationM = endM >= startM ? (endM - startM) : ((endM + 1440) - startM);
+      if (durationM <= 0) durationM = allowedMins;
+
+      const extraMins = durationM > allowedMins ? (durationM - allowedMins) : 0;
+      const extraTimeCharge = extraMins * extraPerMinRate;
+      const extraP = Math.max(0, (parseInt(players) || 2) - 2);
+      const extraPlayersCharge = extraP * extraPlayerRate;
+
+      const totalFrameCost = baseFrameRate + extraTimeCharge + extraPlayersCharge;
+      return { totalFrameCost, durationM, extraMins };
+    }
+
+    function computeAndPopulateStationSettlement(st, endTimestamp, endTimeInputVal) {
+      const sess = st.session;
+      const elapsedMins = Math.max(1, Math.ceil((endTimestamp - sess.startTime) / 60000));
+      const endTimeFormatted = new Date(endTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      let basePrice = 0, breakdownLines = [], frameAuditList = [];
+
+      if (sess.isFramePlay) {
+        let allCompleted = JSON.parse(JSON.stringify(sess.completedFrames || []));
+        if (sess.frameInProgress) {
+          allCompleted.push({
+            frameNumber: allCompleted.length + 1,
+            startTimeFormatted: sess.currentFrameStartTimeFormatted || sess.startTimeFormatted,
+            endTimeFormatted: endTimeFormatted,
+            players: sess.currentFramePlayers || 2
+          });
+        }
+        if (allCompleted.length === 0) {
+          allCompleted.push({
+            frameNumber: 1,
+            startTimeFormatted: sess.startTimeFormatted,
+            endTimeFormatted: endTimeFormatted,
+            players: 2
+          });
+        }
+
+        basePrice = allCompleted.reduce((acc, f) => {
+          const { totalFrameCost, durationM, extraMins } = calculateSingleFrameCost(st.type, f.startTimeFormatted, f.endTimeFormatted, f.players);
+          f.charge = totalFrameCost;
+          f.durationMins = durationM;
+          f.extraMins = extraMins;
+          return acc + totalFrameCost;
+        }, 0);
+
+        frameAuditList = allCompleted;
+        breakdownLines.push({ name: `${st.type === 'snooker' ? 'Snooker' : 'Pool'} (${allCompleted.length} Frames)`, price: basePrice });
+      } else {
+        if (st.type === 'ps5') {
+          const pRates = RATES.ps5[sess.plan] || RATES.ps5['30m'] || { 1: 80, 2: 140, 3: 210, 4: 280, duration: 30 };
+          const baseDuration = pRates.duration || 30;
+          const baseCost = pRates[sess.players] || 140;
+          const ratePerMin = baseCost / baseDuration;
+
+          if (elapsedMins > baseDuration) {
+            const extraMins = elapsedMins - baseDuration;
+            const extraCost = Math.round(extraMins * ratePerMin);
+            basePrice = baseCost + extraCost;
+            breakdownLines.push({ name: `PS5: ${baseDuration}m (${sess.players}P) + ${extraMins}m extra`, price: basePrice });
+          } else {
+            basePrice = baseCost;
+            breakdownLines.push({ name: `PS5: ${baseDuration}m (${sess.players}P)`, price: basePrice });
+          }
+        } else if (st.type === 'sim') {
+          basePrice = RATES.sim[sess.mode] ? RATES.sim[sess.mode].price : 120;
+          breakdownLines.push({ name: sess.planLabel || `Simulator Plan`, price: basePrice });
+        } else {
+          const pRates = sess.mode === 'hourly' ? RATES.pool.hourly : RATES.pool.thirtyMin;
+          basePrice = pRates[sess.players] || 200;
+          breakdownLines.push({ name: sess.planLabel || `Pool Timed Play`, price: basePrice });
+        }
+      }
+
+      const cafeTotal = (sess.cafeOrders || []).reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+      const grossTotal = basePrice + cafeTotal;
+
+      pendingSettlementData = {
+        type: 'station',
+        stationId: st.id,
+        customer: sess.custName,
+        stationName: st.name,
+        gameCategory: st.type,
+        gameAmount: basePrice,
+        cafeAmount: cafeTotal,
+        grossTotal: grossTotal,
+        discountPercent: 0,
+        discountAmount: 0,
+        netTotal: grossTotal,
+        breakdown: breakdownLines,
+        cafeOrders: JSON.parse(JSON.stringify(sess.cafeOrders || [])),
+        startTime: sess.startTimeFormatted,
+        endTime: endTimeFormatted,
+        durationMins: `${elapsedMins} mins`,
+        framesAudit: frameAuditList
+      };
+
+      document.getElementById('pay-time-adjust-box').style.display = 'block';
+      document.getElementById('pay-end-time-input').value = endTimeInputVal;
+      document.getElementById('pay-discount-percent-input').value = 0;
+
+      renderFrameAuditInSettlement();
+      renderSettlementItemsManager();
+      document.getElementById('payment-modal').style.display = 'flex';
+    }
+
+    function renderFrameAuditInSettlement() {
+      const wrap = document.getElementById('settle-frame-audit-wrapper');
+      const tbody = document.getElementById('settle-frame-audit-tbody');
+      if (!wrap || !tbody) return;
+      if (!pendingSettlementData || !pendingSettlementData.framesAudit || pendingSettlementData.framesAudit.length === 0) {
+        wrap.style.display = 'none';
+        return;
+      }
+
+      wrap.style.display = 'block';
+      tbody.innerHTML = '';
+
+      pendingSettlementData.framesAudit.forEach((f, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="padding:4px 6px; border-bottom:1px solid #1e293b;"><strong>F#${f.frameNumber}</strong></td>
+          <td style="padding:4px 6px; border-bottom:1px solid #1e293b;"><input type="text" value="${f.startTimeFormatted || ''}" onchange="updateSettlementFrameTiming(${idx}, 'startTimeFormatted', this.value)" style="width:75px; padding:2px 4px; background:#070d18; border:1px solid #334155; color:white; border-radius:3px; font-size:11px;"></td>
+          <td style="padding:4px 6px; border-bottom:1px solid #1e293b;"><input type="text" value="${f.endTimeFormatted || ''}" onchange="updateSettlementFrameTiming(${idx}, 'endTimeFormatted', this.value)" style="width:75px; padding:2px 4px; background:#070d18; border:1px solid #334155; color:white; border-radius:3px; font-size:11px;"></td>
+          <td style="padding:4px 6px; border-bottom:1px solid #1e293b;">
+            <select style="padding:2px 4px; background:#070d18; border:1px solid #334155; color:white; font-size:11px;" onchange="updateSettlementFramePlayers(${idx}, this.value)">
+              <option value="2" ${f.players == 2 ? 'selected' : ''}>2P</option>
+              <option value="3" ${f.players == 3 ? 'selected' : ''}>3P</option>
+              <option value="4" ${f.players == 4 ? 'selected' : ''}>4P</option>
+              <option value="5" ${f.players == 5 ? 'selected' : ''}>5P</option>
+            </select>
+          </td>
+          <td style="padding:4px 6px; border-bottom:1px solid #1e293b; text-align:right;">
+            <strong style="color:var(--color-pool);">₹${f.charge || 0}</strong>
+            ${f.extraMins > 0 ? `<br><small style="color:#ef4444; font-size:9px;">+${f.extraMins}m extra</small>` : ''}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateSettlementFrameTiming(index, field, value) {
+      if (!pendingSettlementData || !pendingSettlementData.framesAudit) return;
+      pendingSettlementData.framesAudit[index][field] = value.trim();
+      recalculateAllFramesPricing();
+    }
+
+    function updateSettlementFramePlayers(index, val) {
+      if (!pendingSettlementData || !pendingSettlementData.framesAudit) return;
+      pendingSettlementData.framesAudit[index].players = parseInt(val) || 2;
+      recalculateAllFramesPricing();
+    }
+
+    function recalculateAllFramesPricing() {
+      if (!pendingSettlementData || !pendingSettlementData.framesAudit) return;
+      let newGameTot = 0;
+      pendingSettlementData.framesAudit.forEach(f => {
+        const { totalFrameCost, durationM, extraMins } = calculateSingleFrameCost(pendingSettlementData.gameCategory, f.startTimeFormatted, f.endTimeFormatted, f.players);
+        f.charge = totalFrameCost;
+        f.durationMins = durationM;
+        f.extraMins = extraMins;
+        newGameTot += totalFrameCost;
+      });
+
+      const isSnooker = pendingSettlementData.gameCategory === 'snooker';
+      pendingSettlementData.breakdown = [{ name: `${isSnooker ? 'Snooker' : 'Pool'} (${pendingSettlementData.framesAudit.length} Frames)`, price: newGameTot }];
+      renderFrameAuditInSettlement();
+      recalcPendingSettlementTotals();
+    }
+
+    function recalculateSettlementOnEndTimeChange() {
+      if (!pendingSettlementData || pendingSettlementData.type !== 'station') return;
+      const newTimeVal = document.getElementById('pay-end-time-input').value;
+      if (newTimeVal) openSettleModalForStation(pendingSettlementData.stationId, newTimeVal);
+    }
+
+    function renderSettlementItemsManager() {
+      const p = pendingSettlementData;
+      const listEl = document.getElementById('pay-bill-items-list');
+      listEl.innerHTML = '';
+
+      if (p.breakdown && p.breakdown.length > 0) {
+        p.breakdown.forEach((b, idx) => {
+          const row = document.createElement('div');
+          row.className = 'bill-item-row';
+          row.innerHTML = `<span>🎮 ${b.name}</span><span><strong>₹${b.price}</strong> <button class="remove-item-btn" onclick="removeBillGameItem(${idx})">✕</button></span>`;
+          listEl.appendChild(row);
+        });
+      }
+
+      const cafeList = p.cafeOrders || p.items || [];
+      cafeList.forEach((c, idx) => {
+        const row = document.createElement('div');
+        row.className = 'bill-item-row';
+        row.innerHTML = `<span>🍟 ${c.name} (x${c.qty})</span><span><strong>₹${c.unitPrice * c.qty}</strong> <button class="remove-item-btn" onclick="removeBillCafeItem(${idx})">✕</button></span>`;
+        listEl.appendChild(row);
+      });
+
+      recalcPendingSettlementTotals();
+    }
+
+    function removeBillGameItem(index) {
+      pendingSettlementData.breakdown.splice(index, 1);
+      renderSettlementItemsManager();
+    }
+
+    function removeBillCafeItem(index) {
+      if (pendingSettlementData.cafeOrders) pendingSettlementData.cafeOrders.splice(index, 1);
+      else if (pendingSettlementData.items) pendingSettlementData.items.splice(index, 1);
+      renderSettlementItemsManager();
+    }
+
+    function recalcPendingSettlementTotals() {
+      const p = pendingSettlementData;
+      const gameTot = (p.breakdown || []).reduce((sum, b) => sum + b.price, 0);
+      const cafeList = p.cafeOrders || p.items || [];
+      const cafeTot = cafeList.reduce((sum, c) => sum + (c.unitPrice * c.qty), 0);
+
+      p.gameAmount = gameTot;
+      p.cafeAmount = cafeTot;
+      p.grossTotal = gameTot + cafeTot;
+
+      document.getElementById('pay-orig-amount').innerText = `₹${p.grossTotal}`;
+      applyPaymentAdjustments();
+    }
+
+    function applyPaymentAdjustments() {
+      if (!pendingSettlementData) return;
+      const orig = pendingSettlementData.grossTotal;
+      let pct = Math.min(100, Math.max(0, parseFloat(document.getElementById('pay-discount-percent-input').value) || 0));
+      const discAmt = Math.round((orig * pct) / 100);
+      const net = Math.max(0, orig - discAmt);
+
+      pendingSettlementData.discountPercent = pct;
+      pendingSettlementData.discountAmount = discAmt;
+      pendingSettlementData.netTotal = net;
+
+      document.getElementById('discount-rupees-hint').innerText = `Discount Amount: ₹${discAmt} (${pct}% off)`;
+      document.getElementById('pay-final-amount').innerText = `₹${net}`;
+    }
+
+    function applyAutoRoundOff() {
+      if (!pendingSettlementData) return;
+      const orig = pendingSettlementData.grossTotal;
+      const rounded = Math.floor(orig / 10) * 10;
+      const diff = orig - rounded;
+      document.getElementById('pay-discount-percent-input').value = diff > 0 ? parseFloat(((diff / orig) * 100).toFixed(1)) : 0;
+      applyPaymentAdjustments();
+    }
+
+    function openSettleWalkinModal() {
+      if (walkinCart.length === 0) {
+        alert("Cart empty hai! Pehle menu se item add karein.");
+        return;
+      }
+      const custName = document.getElementById('walkin-cust-name').value.trim() || 'Walk-in Guest';
+      const tot = walkinCart.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+      const now = new Date();
+
+      pendingSettlementData = {
+        type: 'walkin',
+        customer: custName,
+        stationName: 'Direct Cafe',
+        gameCategory: 'cafe',
+        gameAmount: 0,
+        cafeAmount: tot,
+        grossTotal: tot,
+        discountPercent: 0,
+        discountAmount: 0,
+        netTotal: tot,
+        breakdown: [],
+        items: JSON.parse(JSON.stringify(walkinCart)),
+        startTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        endTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        durationMins: '--'
+      };
+
+      document.getElementById('pay-time-adjust-box').style.display = 'none';
+      document.getElementById('pay-discount-percent-input').value = 0;
+      renderSettlementItemsManager();
+      document.getElementById('payment-modal').style.display = 'flex';
+    }
+
+    function confirmPaymentAndSettle() {
+      if (!pendingSettlementData) return;
+      const mode = document.getElementById('pay-mode-select').value;
+      const p = pendingSettlementData;
+      closeModal('payment-modal');
+
+      const now = new Date();
+      const dateFormatted = now.toISOString().split('T')[0];
+      const timeFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const gameSummary = (p.breakdown || []).map(b => `${b.name} [₹${b.price}]`).join(' + ');
+      const cafeList = p.cafeOrders || p.items || [];
+      const cafeSummary = cafeList.map(c => `${c.name} x${c.qty} [₹${c.unitPrice * c.qty}]`).join(' + ');
+      const fullLabel = [gameSummary, cafeSummary].filter(Boolean).join(' + ') || p.stationName;
+
+      const record = {
+        id: 'txn_' + Date.now(),
+        epoch: now.getTime(),
+        date: dateFormatted,
+        time: timeFormatted,
+        customer: p.customer,
+        itemLabel: fullLabel,
+        category: p.gameCategory,
+        gameAmount: p.gameAmount,
+        cafeAmount: p.cafeAmount,
+        discount: p.discountAmount,
+        discountPercent: p.discountPercent || 0,
+        netAmount: p.netTotal,
+        payMode: mode
+      };
+      
+      let all = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+      all.unshift(record);
+      localStorage.setItem('omg_master_transactions', JSON.stringify(all));
+
+      if (p.type === 'station') {
+        const st = STATIONS.find(s => s.id === p.stationId);
+        if (st) {
+          st.running = false;
+          st.session = null;
+        }
+        renderStations();
+        updateActiveDropdown();
+      } else if (p.type === 'walkin') {
+        walkinCart = [];
+        updateWalkinCartUI();
+        document.getElementById('walkin-cust-name').value = '';
+      } else if (p.type === 'tab') {
+        const idx = p.tabIdx;
+        CUSTOMER_TABS.splice(idx, 1);
+        saveTabsToStorage();
+      }
+
+      document.getElementById('hold-tab-btn').style.display = 'block';
+      showPrintReceipt(p, mode, record.date);
+      pendingSettlementData = null;
+    }
+
+    function showPrintReceipt(p, payMode, txDate) {
+      document.getElementById('rec-date').innerText = txDate;
+      document.getElementById('rec-customer').innerText = p.customer;
+      document.getElementById('rec-station').innerText = p.stationName;
+      document.getElementById('rec-paymode').innerText = payMode;
+      document.getElementById('rec-starttime').innerText = p.startTime;
+      document.getElementById('rec-endtime').innerText = p.endTime;
+      document.getElementById('rec-time').innerText = p.durationMins;
+
+      const breakdownEl = document.getElementById('rec-breakdown');
+      breakdownEl.innerHTML = '';
+
+      (p.breakdown || []).forEach(b => {
+        breakdownEl.innerHTML += `<div class="receipt-line"><span>${b.name}</span><strong>₹${b.price}</strong></div>`;
+      });
+
+      const cafeList = p.cafeOrders || p.items || [];
+      cafeList.forEach(c => {
+        breakdownEl.innerHTML += `<div class="receipt-line"><span>${c.name} x${c.qty}</span><strong>₹${c.unitPrice * c.qty}</strong></div>`;
+      });
+
+      if (p.discountAmount > 0) {
+        breakdownEl.innerHTML += `<div class="receipt-line" style="color:#e11d48;"><span>Discount (${p.discountPercent}%)</span><span>-₹${p.discountAmount}</span></div>`;
+      }
+
+      document.getElementById('rec-total').innerText = `₹${p.netTotal}`;
+      document.getElementById('receipt-modal').style.display = 'flex';
+    }
+
+    /* ---------------- PART 4: CUSTOMER TABS ENGINE ---------------- */
+    let CUSTOMER_TABS = JSON.parse(localStorage.getItem('omg_active_tabs') || '[]');
+
+    function saveTabsToStorage() {
+      localStorage.setItem('omg_active_tabs', JSON.stringify(CUSTOMER_TABS));
+      renderCustomerTabs();
+    }
+
+    function holdSessionToCustomerTab() {
+      if (!pendingSettlementData) return;
+      const p = pendingSettlementData;
+      closeModal('payment-modal');
+
+      const custName = p.customer || 'Guest Group';
+      let existingTab = CUSTOMER_TABS.find(t => t.customer.toLowerCase() === custName.toLowerCase());
+
+      if (!existingTab) {
+        existingTab = {
+          tabId: 'tab_' + Date.now(),
+          customer: custName,
+          createdTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          itemsList: [],
+          totalAmount: 0
+        };
+        CUSTOMER_TABS.push(existingTab);
+      }
+
+      (p.breakdown || []).forEach(b => {
+        existingTab.itemsList.push({ name: `${p.stationName}: ${b.name}`, price: b.price });
+      });
+
+      const cafeList = p.cafeOrders || p.items || [];
+      cafeList.forEach(c => {
+        existingTab.itemsList.push({ name: `Cafe: ${c.name} (x${c.qty})`, price: c.unitPrice * c.qty });
+      });
+
+      existingTab.totalAmount = existingTab.itemsList.reduce((sum, it) => sum + it.price, 0);
+
+      if (p.type === 'station') {
+        const st = STATIONS.find(s => s.id === p.stationId);
+        if (st) {
+          st.running = false;
+          st.session = null;
+        }
+        renderStations();
+        updateActiveDropdown();
+      } else if (p.type === 'walkin') {
+        walkinCart = [];
+        updateWalkinCartUI();
+        document.getElementById('walkin-cust-name').value = '';
+      }
+
+      saveTabsToStorage();
+      pendingSettlementData = null;
+      alert(`Station free ho gaya aur ₹${existingTab.totalAmount} ka bill '${custName}' ke Tab mein chala gaya!`);
+    }
+
+    function toggleTabsDrawer() {
+      const modal = document.getElementById('tabs-modal');
+      if (modal) {
+        modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        renderCustomerTabs();
+      }
+    }
+
+    function renderCustomerTabs() {
+      const grid = document.getElementById('customer-tabs-grid');
+      const badge = document.getElementById('active-tabs-badge');
+      if (!grid) return;
+
+      badge.innerText = `${CUSTOMER_TABS.length} Active`;
+
+      if (CUSTOMER_TABS.length === 0) {
+        grid.innerHTML = '<div style="color: var(--text-dim); font-size: 12px; grid-column: 1/-1;">Koi running tab nahi hai. Settle karte waqt "Add to Customer Tab" dabayein.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      CUSTOMER_TABS.forEach((t, idx) => {
+        const card = document.createElement('div');
+        card.className = 'tab-card';
+
+        const linesHtml = t.itemsList.map(it => `
+          <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+            <span>${it.name}</span>
+            <strong style="color:var(--color-pool);">₹${it.price}</strong>
+          </div>
+        `).join('');
+
+        card.innerHTML = `
+          <div>
+            <h4>
+              <span>👤 ${t.customer}</span>
+              <small style="font-size:10px; color:var(--text-dim);">${t.createdTime}</small>
+            </h4>
+            <div class="tab-items-box">${linesHtml}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin:8px 0;">
+              <span style="font-size:12px; color:var(--text-dim);">Tab Balance:</span>
+              <strong style="color:var(--color-pool); font-size:15px;">₹${t.totalAmount}</strong>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="success" style="flex:1;" onclick="openSettleTabModal(${idx})">Settle Tab</button>
+            <button class="outline-danger" style="padding:4px 8px;" onclick="cancelTabManual(${idx})" title="Delete Tab">✕</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function openSettleTabModal(tabIdx) {
+      const t = CUSTOMER_TABS[tabIdx];
+      if (!t) return;
+
+      const now = new Date();
+      pendingSettlementData = {
+        type: 'tab',
+        tabIdx: tabIdx,
+        customer: t.customer,
+        stationName: 'Customer Running Tab',
+        gameCategory: 'tab',
+        gameAmount: 0,
+        cafeAmount: t.totalAmount,
+        grossTotal: t.totalAmount,
+        discountPercent: 0,
+        discountAmount: 0,
+        netTotal: t.totalAmount,
+        breakdown: t.itemsList,
+        cafeOrders: [],
+        startTime: t.createdTime,
+        endTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        durationMins: 'Group Tab'
+      };
+
+      document.getElementById('pay-time-adjust-box').style.display = 'none';
+      if (document.getElementById('settle-frame-audit-wrapper')) {
+        document.getElementById('settle-frame-audit-wrapper').style.display = 'none';
+      }
+      document.getElementById('hold-tab-btn').style.display = 'none';
+      document.getElementById('pay-discount-percent-input').value = 0;
+
+      renderSettlementItemsManager();
+      document.getElementById('payment-modal').style.display = 'flex';
+    }
+
+    function cancelTabManual(tabIdx) {
+      if (confirm(`Kya aap ${CUSTOMER_TABS[tabIdx].customer} ka running tab delete karna chahte hain?`)) {
+        CUSTOMER_TABS.splice(tabIdx, 1);
+        saveTabsToStorage();
+      }
+    }
+
+    /* ---------------- PART 5: REPORTS & ANALYTICS ENGINE ---------------- */
+    let currentReportMode = 'day';
+
+    function openReportsModal() {
+      const now = new Date();
+      const todayDateStr = now.toISOString().split('T')[0];
+      const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      document.getElementById('report-date-picker').value = todayDateStr;
+      document.getElementById('report-month-picker').value = thisMonthStr;
+
+      switchReportViewMode('day');
+      document.getElementById('reports-modal').style.display = 'flex';
+    }
+
+    function switchReportViewMode(mode) {
+      currentReportMode = mode;
+      const dayBtn = document.getElementById('rep-mode-day-btn');
+      const monthBtn = document.getElementById('rep-mode-month-btn');
+      const datePicker = document.getElementById('report-date-picker');
+      const monthPicker = document.getElementById('report-month-picker');
+
+      if (mode === 'day') {
+        dayBtn.className = 'primary';
+        monthBtn.className = '';
+        datePicker.style.display = 'inline-block';
+        monthPicker.style.display = 'none';
+      } else {
+        monthBtn.className = 'primary';
+        dayBtn.className = '';
+        datePicker.style.display = 'none';
+        monthPicker.style.display = 'inline-block';
+      }
+      renderReportsDashboard();
+    }
+
+   function renderReportsDashboard() {
+      const allTxns = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+      const tbody = document.getElementById('rep-transactions-tbody');
+      if (tbody) tbody.innerHTML = '';
+
+      let filtered = [];
+      if (currentReportMode === 'day') {
+        const selectedDate = document.getElementById('report-date-picker').value;
+        filtered = allTxns.filter(t => t.date === selectedDate);
+        const heading = document.getElementById('rep-log-heading');
+        if (heading) heading.innerText = `Date: ${selectedDate} (${filtered.length} Bills)`;
+      } else {
+        const selectedMonth = document.getElementById('report-month-picker').value;
+        filtered = allTxns.filter(t => t.date && t.date.startsWith(selectedMonth));
+        const heading = document.getElementById('rep-log-heading');
+        if (heading) heading.innerText = `Month: ${selectedMonth} (${filtered.length} Bills)`;
+      }
+
+      let totalRev = 0, cashRev = 0, onlineRev = 0;
+      let catSnooker = 0, catPool = 0, catPs5 = 0, catSim = 0, catCafe = 0;
+
+      filtered.forEach(t => {
+        const netAmt = parseFloat(t.netAmount) || 0;
+        totalRev += netAmt;
+        if (t.payMode === 'Cash') cashRev += netAmt;
+        else onlineRev += netAmt;
+
+        const hasBreakdown = (t.snookerAmount || t.poolAmount || t.ps5Amount || t.simAmount || t.cafeAmount);
+
+        if (hasBreakdown) {
+          catSnooker += (parseFloat(t.snookerAmount) || 0);
+          catPool += (parseFloat(t.poolAmount) || 0);
+          catPs5 += (parseFloat(t.ps5Amount) || 0);
+          catSim += (parseFloat(t.simAmount) || 0);
+          catCafe += (parseFloat(t.cafeAmount) || 0);
+        } else {
+          const cat = (t.category || '').toLowerCase();
+          if (cat === 'snooker') catSnooker += netAmt;
+          else if (cat === 'pool') catPool += netAmt;
+          else if (cat === 'ps5') catPs5 += netAmt;
+          else if (cat === 'sim' || cat === 'wheel') catSim += netAmt;
+          else catCafe += netAmt;
+        }
+
+        if (tbody) {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${t.date ? t.date.slice(5) : ''} ${t.time || ''}</td>
+            <td><strong>${t.customer || 'Guest'}</strong></td>
+            <td style="max-width:320px; line-height:1.4; font-size:11px; white-space:pre-line;">${(t.itemLabel || '-').replace(/\s*\+\s*/g, '\n• ')}</td>
+            <td><span style="color:${t.payMode === 'Cash' ? 'var(--green)' : 'var(--accent-blue)'};">${t.payMode}</span></td>
+            <td style="text-align:right; font-weight:bold; color:var(--color-pool);">₹${netAmt}</td>
+            <td style="text-align:center; white-space:nowrap;">
+              <button onclick="openEditTxnModal('${t.id}')" style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; padding:2px 6px; font-size:10px; border-radius:3px; cursor:pointer; margin-right:4px;">✏️</button>
+              <button onclick="deleteSingleTxn('${t.id}')" style="background:#1e293b; color:#ef4444; border:1px solid #ef4444; padding:2px 6px; font-size:10px; border-radius:3px; cursor:pointer;">🗑️</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        }
+      });
+
+      if (tbody && filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:14px;">Is date/month mein koi records nahi hain.</td></tr>';
+      }
+
+      const elTotal = document.getElementById('rep-total-rev');
+      const elCash = document.getElementById('rep-cash-rev');
+      const elOnline = document.getElementById('rep-online-rev');
+      const elSnook = document.getElementById('rep-cat-snooker');
+      const elPool = document.getElementById('rep-cat-pool');
+      const elPs5 = document.getElementById('rep-cat-ps5');
+      const elSim = document.getElementById('rep-cat-sim');
+      const elCafe = document.getElementById('rep-cat-cafe');
+
+      if (elTotal) elTotal.innerText = `₹${totalRev}`;
+      if (elCash) elCash.innerText = `₹${cashRev}`;
+      if (elOnline) elOnline.innerText = `₹${onlineRev}`;
+      if (elSnook) elSnook.innerText = `₹${catSnooker}`;
+      if (elPool) elPool.innerText = `₹${catPool}`;
+      if (elPs5) elPs5.innerText = `₹${catPs5}`;
+      if (elSim) elSim.innerText = `₹${catSim}`;
+      if (elCafe) elCafe.innerText = `₹${catCafe}`;
+    }
+
+    function openEditTxnModal(txnId) {
+      const allTxns = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+      const txn = allTxns.find(t => t.id === txnId);
+      if (!txn) return;
+
+      document.getElementById('edit-txn-id').value = txn.id;
+      document.getElementById('edit-txn-cust').value = txn.customer || '';
+      document.getElementById('edit-txn-label').value = txn.itemLabel || '';
+      document.getElementById('edit-txn-net').value = txn.netAmount || 0;
+      document.getElementById('edit-txn-snooker').value = txn.snookerAmount || 0;
+      document.getElementById('edit-txn-pool').value = txn.poolAmount || 0;
+      document.getElementById('edit-txn-ps5').value = txn.ps5Amount || 0;
+      document.getElementById('edit-txn-sim').value = txn.simAmount || 0;
+      document.getElementById('edit-txn-cafe').value = txn.cafeAmount || 0;
+      document.getElementById('edit-txn-paymode').value = txn.payMode || 'Cash';
+
+      document.getElementById('edit-txn-modal').style.display = 'flex';
+    }
+
+    function saveEditedTxn() {
+      const id = document.getElementById('edit-txn-id').value;
+      let allTxns = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+      const idx = allTxns.findIndex(t => t.id === id);
+      if (idx === -1) return;
+
+      allTxns[idx].customer = document.getElementById('edit-txn-cust').value.trim();
+      allTxns[idx].itemLabel = document.getElementById('edit-txn-label').value.trim();
+      allTxns[idx].netAmount = parseFloat(document.getElementById('edit-txn-net').value) || 0;
+      allTxns[idx].snookerAmount = parseFloat(document.getElementById('edit-txn-snooker').value) || 0;
+      allTxns[idx].poolAmount = parseFloat(document.getElementById('edit-txn-pool').value) || 0;
+      allTxns[idx].ps5Amount = parseFloat(document.getElementById('edit-txn-ps5').value) || 0;
+      allTxns[idx].simAmount = parseFloat(document.getElementById('edit-txn-sim').value) || 0;
+      allTxns[idx].cafeAmount = parseFloat(document.getElementById('edit-txn-cafe').value) || 0;
+      allTxns[idx].payMode = document.getElementById('edit-txn-paymode').value;
+
+      localStorage.setItem('omg_master_transactions', JSON.stringify(allTxns));
+      closeModal('edit-txn-modal');
+      renderReportsDashboard();
+      alert("✓ Entry successfully update ho gayi!");
+    }
+
+    function deleteSingleTxn(txnId) {
+      if (confirm("Kya aap sach mein is entry ko delete karna chahte hain?")) {
+        let allTxns = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+        allTxns = allTxns.filter(t => t.id !== txnId);
+        localStorage.setItem('omg_master_transactions', JSON.stringify(allTxns));
+        renderReportsDashboard();
+      }
+    }
+
+    /* Backdated Entry Handling */
+    function openBackdateEntryModal() {
+      const now = new Date();
+      document.getElementById('bk-date-input').value = now.toISOString().split('T')[0];
+      document.getElementById('bk-time-input').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      document.getElementById('bk-cust-input').value = '';
+      document.getElementById('bk-desc-input').value = '';
+      document.getElementById('bk-amount-input').value = '';
+      document.getElementById('backdate-modal').style.display = 'flex';
+    }
+
+    function saveBackdateEntry() {
+      const date = document.getElementById('bk-date-input').value;
+      const time = document.getElementById('bk-time-input').value;
+      const customer = document.getElementById('bk-cust-input').value.trim() || 'Manual Entry';
+      const category = document.getElementById('bk-cat-input').value;
+      const desc = document.getElementById('bk-desc-input').value.trim() || `${category.toUpperCase()} Bill`;
+      const amt = parseFloat(document.getElementById('bk-amount-input').value);
+      const payMode = document.getElementById('bk-paymode-input').value;
+
+      if (!date || isNaN(amt) || amt <= 0) {
+        alert("Valid date aur amount daalna zaroori hai!");
+        return;
+      }
+
+      const record = {
+        id: 'txn_' + Date.now(),
+        epoch: new Date(`${date}T${time || '12:00'}`).getTime(),
+        date: date,
+        time: time,
+        customer: customer,
+        itemLabel: desc,
+        category: category,
+        gameAmount: category !== 'cafe' ? amt : 0,
+        cafeAmount: category === 'cafe' ? amt : 0,
+        discount: 0,
+        discountPercent: 0,
+        netAmount: amt,
+        payMode: payMode
+      };
+
+      let all = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+      all.unshift(record);
+      localStorage.setItem('omg_master_transactions', JSON.stringify(all));
+
+      closeModal('backdate-modal');
+      renderReportsDashboard();
+      alert("Past bill successfully register mein add ho gaya!");
+    }
+
+    /* CSV Download Engine */
+    function downloadCurrentReportCSV() {
+      const allTxns = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+      let filtered = [];
+      let filename = 'omg_report.csv';
+
+      if (currentReportMode === 'day') {
+        const d = document.getElementById('report-date-picker').value;
+        filtered = allTxns.filter(t => t.date === d);
+        filename = `OMG_Report_Day_${d}.csv`;
+      } else {
+        const m = document.getElementById('report-month-picker').value;
+        filtered = allTxns.filter(t => t.date && t.date.startsWith(m));
+        filename = `OMG_Report_Month_${m}.csv`;
+      }
+
+      if (filtered.length === 0) {
+        alert("Download karne ke liye koi data nahi hai!");
+        return;
+      }
+
+      let csv = "Date,Time,Customer,Category,Details,Payment Mode,Net Amount (INR)\n";
+      filtered.forEach(t => {
+        const cleanDesc = (t.itemLabel || '').replace(/,/g, ' ');
+        csv += `"${t.date}","${t.time}","${t.customer}","${t.category}","${cleanDesc}","${t.payMode}",${t.netAmount}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    /* Master Reset with Password 1531 */
+    function triggerMasterResetPrompt() {
+      const pass = prompt("⚠️ PERMANENT DATA WIPE:\nSaara purana hisaab aur transactions delete ho jayenge jise wapas nahi laya ja sakta.\n\nMaster Password enter karein:");
+      if (pass === null) return;
+
+      if (pass === "1531") {
+        if (confirm("Kripya aakhiri baar confirm karein: Kya aap SACH MEIN poora transaction database delete karna chahte hain?")) {
+          localStorage.removeItem('omg_master_transactions');
+          renderReportsDashboard();
+          alert("✓ Database successfully wiped! Sabhi purane reports reset ho gaye hain.");
+        }
+      } else {
+        alert("❌ Galat Password! Master reset cancel ho gaya.");
+      }
+    }
+
+   /* ---------------- PART 6: INSTANT FILE IMPORT ENGINE ---------------- */
+    function handleDirectFileImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          let content = e.target.result.trim();
+          if (content.startsWith('```')) {
+            content = content.replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '');
+          }
+
+          const importedEntries = JSON.parse(content);
+          if (!Array.isArray(importedEntries) || importedEntries.length === 0) {
+            alert("File mein valid entries nahi mili!");
+            return;
+          }
+
+          let all = JSON.parse(localStorage.getItem('omg_master_transactions') || '[]');
+          let targetDate = importedEntries[0].date || new Date().toISOString().split('T')[0];
+
+          const formattedEntries = importedEntries.map((entry, idx) => ({
+            id: 'txn_' + Date.now() + '_' + idx,
+            epoch: Date.now() + idx,
+            date: entry.date || targetDate,
+            time: entry.time || '12:00 PM',
+            customer: entry.customer || 'Guest',
+            itemLabel: entry.itemLabel || 'Session',
+            category: entry.category || 'snooker',
+            snookerAmount: Number(entry.snookerAmount) || 0,
+            poolAmount: Number(entry.poolAmount) || 0,
+            ps5Amount: Number(entry.ps5Amount) || 0,
+            simAmount: Number(entry.simAmount) || Number(entry.wheelAmount) || 0,
+            cafeAmount: Number(entry.cafeAmount) || 0,
+            netAmount: Number(entry.netAmount) || 0,
+            payMode: entry.payMode || 'Cash'
+          }));
+
+          all = all.concat(formattedEntries);
+          localStorage.setItem('omg_master_transactions', JSON.stringify(all));
+
+          const picker = document.getElementById('report-date-picker');
+          if (picker) picker.value = targetDate;
+          renderReportsDashboard();
+
+          alert(`✓ Zabardast! ${importedEntries.length} entries successfully register mein save ho gayi hain!`);
+        } catch (err) {
+          alert("Import Error: " + err.message);
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
